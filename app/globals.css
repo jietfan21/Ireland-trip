@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #17322d;
+  --color-sub: #5d716c;
+  --color-cream: #f5f2ea;
+  --color-card: #ffffff;
+  --color-line: #e3ddd0;
+  --color-shamrock: #1f7a5a;
+  --color-shamrock-soft: #e3f1ea;
+  --color-amber: #c7782b;
+  --color-warn: #b45309;
+  --color-warn-soft: #fdf1e1;
+  --font-sans: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 8px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.maplibregl-popup-content {
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-family: var(--font-sans);
+  box-shadow: 0 8px 24px #17322d26;
+}
