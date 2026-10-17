@@ -35,7 +35,11 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  const cacheable = url.origin === self.location.origin || url.hostname.endsWith("openfreemap.org");
+  const cacheable =
+    url.origin === self.location.origin ||
+    url.hostname.endsWith("openfreemap.org") ||
+    url.hostname === "server.arcgisonline.com" || // satellite
+    url.pathname.startsWith("/elevation-tiles-prod/"); // terrain
   if (!cacheable) return;
   e.respondWith(
     caches.match(req).then(
