@@ -132,11 +132,10 @@ export const stays: Stay[] = [
     checkIn: "15:00",
     checkOut: "11:00",
     phone: "+442871321066",
-    notes: [{ zh: "酒店餐厅 The Grill 可订晚餐", en: "In-house restaurant The Grill takes dinner bookings" }],
-    warning: {
-      zh: "目前只看到 1 间双人房（2 人）的订单，其余 5 人的房间待确认",
-      en: "Only 1 double room (2 adults) found so far — rooms for the other 5 still to confirm",
-    },
+    notes: [
+      { zh: "已订 3 间房", en: "3 rooms booked" },
+      { zh: "酒店餐厅 The Grill 可订晚餐", en: "In-house restaurant The Grill takes dinner bookings" },
+    ],
   },
   {
     id: "galway",
@@ -346,7 +345,7 @@ export const days: Day[] = [
     ],
     tips: [
       { zh: "黑色出租车一般坐 6 人，7 个人可能要 2 辆", en: "A black cab usually seats 6 — 7 of you may need 2 cabs" },
-      { zh: "Mourne Seafood Bar 7 人要先订位", en: "Book Mourne Seafood Bar for 7" },
+      { zh: "没订位：7 个人早点去（18:00 前）比较容易有位", en: "No booking: go early (before 18:00) to get a table for 7" },
     ],
     stops: ["@belfast", "titanic", "peace", "@belfast"],
   },
@@ -413,7 +412,7 @@ export const days: Day[] = [
       { t: "eve", text: { zh: "万圣夜！街上满是装扮的人；Tig Cóilí 或 The Crane Bar 听现场民谣", en: "Halloween night! Costumes everywhere; live trad music at Tig Cóilí or The Crane Bar" } },
     ],
     tips: [
-      { zh: "周六 + 万圣节，晚餐一定要先订 7 人位", en: "Saturday + Halloween: book dinner for 7" },
+      { zh: "周六 + 万圣节人多，没订位就早点去吃晚餐", en: "Saturday + Halloween is busy — no booking, so eat early" },
       { zh: "Salthill 海边有露天停车场，没有限高问题", en: "Salthill has open-air parking — no height limits" },
     ],
     stops: ["@galway", "latin", "spanish", "salthill", "@galway"],
@@ -482,7 +481,7 @@ export const days: Day[] = [
       { t: "15:30", text: { zh: "直接入住金塞尔（避开科克市区塞车），傍晚逛彩色街道", en: "Straight to Kinsale (skip Cork traffic), stroll the colourful streets" } },
       { t: "19:00", text: { zh: "晚餐：Fishy Fishy 海鲜 或 The Black Pig", en: "Dinner: Fishy Fishy seafood or The Black Pig" } },
     ],
-    tips: [{ zh: "金塞尔是爱尔兰美食之都，晚餐先订位", en: "Kinsale is Ireland's food capital — book dinner" }],
+    tips: [{ zh: "金塞尔是爱尔兰美食之都，没订位就早点去", en: "Kinsale is Ireland's food capital — no booking, so go early" }],
     stops: ["@dingle", "muckross", "torc", "@kinsale"],
   },
   {
@@ -614,11 +613,7 @@ export const checklist: { title: L; items: CheckItem[] }[] = [
     title: { zh: "出发前要办（全家）", en: "Before we go (team)" },
     items: [
       { id: "eta", who: "team", text: { zh: "英国 ETA 电子旅行许可：去北爱尔兰（贝尔法斯特、德里）需要，每人用 UK ETA App 申请（容住在爱尔兰可能免）", en: "UK ETA: needed for Northern Ireland (Belfast, Derry) — apply in the UK ETA app for each person (Rong may be exempt as an Irish resident)" } },
-      { id: "derry", who: "team", text: { zh: "确认德里其余 5 人的房间", en: "Confirm Derry rooms for the other 5" } },
       { id: "drivers", who: "team", text: { zh: "确认司机资格：30–80 岁、驾照满 13 年、驾照 + 国际驾照 + 护照同一国家签发", en: "Check drivers qualify: age 30–80, licence held 13+ yrs, licence + IDP + passport from the same country" } },
-      { id: "titanic", who: "team", text: { zh: "订泰坦尼克号博物馆门票（10/28 上午）", en: "Book Titanic Belfast (28 Oct, morning)" } },
-      { id: "moher", who: "team", text: { zh: "订莫赫悬崖门票（11/1 上午）", en: "Book Cliffs of Moher (1 Nov, morning)" } },
-      { id: "dinners", who: "team", text: { zh: "订 7 人晚餐：Mourne Seafood（10/28）、King's Head（10/31 万圣节）、Fishy Fishy（11/3）", en: "Book dinners for 7: Mourne Seafood (28 Oct), King's Head (31 Oct, Halloween), Fishy Fishy (3 Nov)" } },
       { id: "yinghui", who: "team", text: { zh: "拿到颖和辉的航班时间", en: "Get Ying & Hui's flight times" } },
       { id: "shuttle", who: "team", text: { zh: "问 Clayton 酒店 11/6 最早的接驳车时间", en: "Ask Clayton about the earliest shuttle on 6 Nov" } },
     ],
