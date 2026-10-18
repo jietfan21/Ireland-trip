@@ -15,7 +15,7 @@ function resolve(id: string): Pt | null {
     return s ? { id, lng: s.lng, lat: s.lat, name: s.town, nav: stayNavUrl(s), stay: true } : null;
   }
   const p = places[id];
-  return p ? { id, lng: p.lng, lat: p.lat, name: p, nav: navUrl(p.lat, p.lng), stay: false } : null;
+  return p ? { id, lng: p.lng, lat: p.lat, name: p, nav: navUrl(p.lat, p.lng, p.q), stay: false } : null;
 }
 
 const tripDays = days.filter((d) => d.stops.length > 0);

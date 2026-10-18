@@ -131,7 +131,7 @@ export default function DayView({ day }: { day: Day }) {
                   {s.cost && <p className="mt-1 text-[14px] font-medium text-amber">💶 {p(s.cost)}</p>}
                   {pl && (
                     <a
-                      href={navUrl(pl.lat, pl.lng)}
+                      href={navUrl(pl.lat, pl.lng, pl.q)}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-shamrock-soft px-3 py-1 text-[14px] font-semibold text-shamrock"

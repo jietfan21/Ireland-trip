@@ -23,10 +23,12 @@ export const people: Person[] = [
   { id: "hui", zh: "辉", en: "Hui", color: "#15803d", driver: true, flightGroup: "iceland" },
 ];
 
-export type Place = { zh: string; en: string; lat: number; lng: number };
+// q: navigate by this address instead of the (approximate) pin.
+export type Place = { zh: string; en: string; lat: number; lng: number; q?: string };
 
 export const places: Record<string, Place> = {
   airport: { zh: "都柏林机场", en: "Dublin Airport", lat: 53.4213, lng: -6.2701 },
+  rong: { zh: "容的住处（邓多克）", en: "Rong's place (Dundalk)", lat: 54.0, lng: -6.405, q: "37 Rockfield Court, Dundalk A91 Y7N6" },
   howth: { zh: "霍斯渔港", en: "Howth Harbour", lat: 53.3892, lng: -6.0653 },
   phoenix: { zh: "凤凰公园（看鹿）", en: "Phoenix Park (deer)", lat: 53.36, lng: -6.329 },
   trinity: { zh: "圣三一学院", en: "Trinity College", lat: 53.3438, lng: -6.2546 },
@@ -259,8 +261,8 @@ export const days: Day[] = [
     date: "2026-10-25",
     color: "#15803d",
     title: { zh: "抵达都柏林", en: "Arrive Dublin" },
-    route: { zh: "机场 → 霍斯 → 凤凰公园 → 住处", en: "Airport → Howth → Phoenix Park → home" },
-    drive: { zh: "全天短程，约 1 小时", en: "Short hops, ~1 h total" },
+    route: { zh: "机场 → 邓多克（容）→ 凤凰公园 → 住处", en: "Airport → Dundalk (Rong) → Phoenix Park → home" },
+    drive: { zh: "M1 高速：机场 → 邓多克约 1 小时，回程约 1 小时", en: "M1: airport → Dundalk ~1 h, ~1 h back" },
     currency: "EUR",
     stay: "dublin",
     sunAt: [53.35, -6.26],
@@ -268,8 +270,9 @@ export const days: Day[] = [
       { t: "01:30", text: { zh: "QR019 多哈 → 都柏林（6 小时 30 分）", en: "QR019 Doha → Dublin (6 h 30 m)" } },
       { t: "06:00", text: { zh: "抵达都柏林 T1。今天凌晨爱尔兰时间调慢 1 小时，手机会自动更新", en: "Land Dublin T1. Irish clocks went back 1 hour overnight — phones update automatically" }, place: "airport" },
       { t: "07:30", text: { zh: "Alamo 取车：出口 → 4 号区坐租车接驳巴士到 Eastlands。告诉柜台要开去北爱尔兰（跨境费）、登记其他司机", en: "Alamo pick-up: Zone 4 car-rental shuttle to Eastlands. Tell the counter you'll drive to Northern Ireland (cross-border fee) and add the extra drivers" }, place: "airport" },
-      { t: "09:00", text: { zh: "建议：去霍斯渔港吃早餐、看海豹、海边散步；午餐海鲜浓汤、炸鱼薯条", en: "Suggested: Howth harbour — breakfast, seals, seaside stroll; chowder or fish & chips for lunch" }, place: "howth" },
-      { t: "13:30", text: { zh: "去容住的地方看看（按原计划）", en: "Visit Rong's place (as planned)" }, link: { label: { zh: "容的住处", en: "Rong's place" }, url: "https://maps.app.goo.gl/6v13iY8qQKzKPsX9A" } },
+      { t: "08:30", text: { zh: "开 M1 北上邓多克（约 1 小时，途中有收费站约 €2–3）", en: "Drive north on the M1 to Dundalk (~1 h, toll ~€2–3 on the way)" } },
+      { t: "09:30", text: { zh: "到容的住处：37 Rockfield Court，看看他住的地方，一起吃早午餐", en: "Rong's place, 37 Rockfield Court — see where he lives, brunch together" }, place: "rong" },
+      { t: "13:30", text: { zh: "开回都柏林（约 1 小时）", en: "Drive back to Dublin (~1 h)" } },
       { t: "15:00", text: { zh: "凤凰公园看野鹿，离住处 10 分钟", en: "Phoenix Park — wild deer, 10 min from the flat" }, place: "phoenix" },
       { t: "16:15", text: { zh: "超市买早餐和零食（附近 Tesco / Lidl）", en: "Supermarket for breakfast & snacks (Tesco / Lidl nearby)" } },
       { t: "17:00", text: { zh: "入住，喝热汤，早点休息", en: "Check in, warm soup, early night" } },
@@ -279,7 +282,7 @@ export const days: Day[] = [
       { zh: "长途飞行后很累：让睡得最好的人开车，靠左行驶", en: "Long flight: the best-rested person drives. Keep LEFT" },
       { zh: "圣史蒂芬绿地和 Grafton 街移到明天，市区停车不方便", en: "St Stephen's Green & Grafton St moved to Day 2 — city parking is hard" },
     ],
-    stops: ["airport", "howth", "phoenix", "@dublin"],
+    stops: ["airport", "rong", "phoenix", "@dublin"],
   },
   {
     n: 2,
