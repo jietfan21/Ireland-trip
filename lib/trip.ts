@@ -536,6 +536,7 @@ export const days: Day[] = [
     currency: "EUR",
     sunAt: [53.42, -6.24],
     steps: [
+      { t: "04:00", text: { zh: "颖和辉：去 T2（不是 T1）办理登机，EI602 06:15 飞阿姆斯特丹，再转 CI74 回台北（11 月 7 日 06:35 抵达）", en: "Ying & Hui: to T2 (not T1) to check in — EI602 06:15 to Amsterdam, then CI74 to Taipei (lands 7 Nov 06:35)" }, place: "airport" },
       { t: "04:30", text: { zh: "坐酒店接驳车（或预订的出租车）去 T1", en: "Hotel shuttle (or pre-booked taxi) to T1" }, place: "airport" },
       { t: "04:45", text: { zh: "到达 T1 办理登机（起飞前 3 小时）、退税、安检", en: "At T1: check in (3 h before), tax refund, security" } },
       { t: "07:45", text: { zh: "QR020 都柏林 → 多哈（7 小时 5 分）", en: "QR020 Dublin → Doha (7 h 5 m)" } },
@@ -586,12 +587,14 @@ export const flights: Record<Person["flightGroup"], { title: L; legs: Flight[]; 
     ],
   },
   iceland: {
-    title: { zh: "颖 · 辉（北欧航空 SAS，从冰岛飞来）", en: "Ying · Hui (SAS, from Iceland)" },
+    title: { zh: "颖 · 辉（冰岛飞来 · 回台北）", en: "Ying · Hui (from Iceland · home to Taipei)" },
     legs: [
       { code: "SK596", from: "KEF", to: "CPH", dep: "26 Oct 11:35", arr: "26 Oct 15:40" },
       { code: "SK2537", from: "CPH T3", to: "DUB", dep: "26 Oct 17:00", arr: "26 Oct 18:20" },
+      { code: "EI602", from: "DUB T2", to: "AMS", dep: "6 Nov 06:15", arr: "6 Nov 08:55", note: { zh: "回程从 T2 出发（不是 T1）", en: "Home flight leaves from T2 (not T1)" } },
+      { code: "CI74", from: "AMS", to: "TPE T1", dep: "6 Nov 10:40", arr: "7 Nov 06:35" },
     ],
-    note: { zh: "在哥本哈根转机，托运行李每人 1 件", en: "Change in Copenhagen; 1 checked bag each" },
+    note: { zh: "去程北欧航空经哥本哈根，托运 1 件/人；回程爱尔兰航空 + 中华航空经阿姆斯特丹到台北，托运 2 件/人", en: "Out: SAS via Copenhagen, 1 bag each. Home: Aer Lingus + China Airlines via Amsterdam to Taipei, 2 bags each" },
   },
   local: {
     title: { zh: "容 · 在爱尔兰读书", en: "Rong · studying in Ireland" },
