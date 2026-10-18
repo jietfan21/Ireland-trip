@@ -123,12 +123,10 @@ function Flights() {
               </ul>
             )}
             {f.note && (
-              <p className={`mt-2 text-[15px] ${f.legs.length ? "text-sub" : g === "iceland" ? "font-semibold text-warn" : ""}`}>
-                {g === "iceland" && "⏳ "}
+              <p className={`mt-2 text-[15px] ${f.legs.length ? "text-sub" : ""}`}>
                 {p(f.note)}
               </p>
             )}
-            {g === "iceland" && <span className="mt-1 inline-block rounded-full bg-warn-soft px-3 py-1 text-[13px] font-bold text-warn">{t("pending")}</span>}
           </Card>
         );
       })}

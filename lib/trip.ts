@@ -295,7 +295,7 @@ export const days: Day[] = [
       { t: "11:30", text: { zh: "利菲河、半便士桥、圣殿酒吧区", en: "River Liffey, Ha'penny Bridge, Temple Bar" }, place: "hapenny" },
       { t: "12:30", text: { zh: "乔治街拱廊市场：红砖室内市集，午餐、咖啡", en: "George's Street Arcade: red-brick market, lunch & coffee" }, place: "arcade" },
       { t: "14:30", text: { zh: "圣史蒂芬绿地、Grafton 购物街", en: "St Stephen's Green & Grafton Street" }, place: "stephens" },
-      { t: "eve", text: { zh: "开车去机场接颖和辉，7 个人到齐！（航班待补）", en: "Drive to the airport for Ying & Hui — all 7 together! (flight TBC)" }, place: "airport" },
+      { t: "18:20", text: { zh: "颖和辉的 SK2537 从哥本哈根抵达都柏林，开车去机场接，7 个人到齐！", en: "Ying & Hui land on SK2537 from Copenhagen — drive to the airport, all 7 together!" }, place: "airport" },
     ],
     tips: [
       { zh: "今天是爱尔兰公众假期（十月银行假日），市区人多", en: "Today is an Irish public holiday (October Bank Holiday) — busy city" },
@@ -585,9 +585,12 @@ export const flights: Record<Person["flightGroup"], { title: L; legs: Flight[]; 
     ],
   },
   iceland: {
-    title: { zh: "颖 · 辉（从冰岛飞来）", en: "Ying · Hui (from Iceland)" },
-    legs: [],
-    note: { zh: "10 月 26 日晚上抵达都柏林 — 航班资料待补", en: "Arrive Dublin evening of 26 Oct — flight details to add" },
+    title: { zh: "颖 · 辉（北欧航空 SAS，从冰岛飞来）", en: "Ying · Hui (SAS, from Iceland)" },
+    legs: [
+      { code: "SK596", from: "KEF", to: "CPH", dep: "26 Oct 11:35", arr: "26 Oct 15:40" },
+      { code: "SK2537", from: "CPH T3", to: "DUB", dep: "26 Oct 17:00", arr: "26 Oct 18:20" },
+    ],
+    note: { zh: "在哥本哈根转机，托运行李每人 1 件", en: "Change in Copenhagen; 1 checked bag each" },
   },
   local: {
     title: { zh: "容 · 在爱尔兰读书", en: "Rong · studying in Ireland" },
@@ -613,7 +616,6 @@ export const checklist: { title: L; items: CheckItem[] }[] = [
     title: { zh: "出发前要办（全家）", en: "Before we go (team)" },
     items: [
       { id: "eta", who: "team", text: { zh: "英国 ETA 电子旅行许可：去北爱尔兰（贝尔法斯特、德里）需要，每人用 UK ETA App 申请（容住在爱尔兰可能免）", en: "UK ETA: needed for Northern Ireland (Belfast, Derry) — apply in the UK ETA app for each person (Rong may be exempt as an Irish resident)" } },
-      { id: "yinghui", who: "team", text: { zh: "拿到颖和辉的航班时间", en: "Get Ying & Hui's flight times" } },
     ],
   },
   {
