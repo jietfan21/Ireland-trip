@@ -613,9 +613,7 @@ export const checklist: { title: L; items: CheckItem[] }[] = [
     title: { zh: "出发前要办（全家）", en: "Before we go (team)" },
     items: [
       { id: "eta", who: "team", text: { zh: "英国 ETA 电子旅行许可：去北爱尔兰（贝尔法斯特、德里）需要，每人用 UK ETA App 申请（容住在爱尔兰可能免）", en: "UK ETA: needed for Northern Ireland (Belfast, Derry) — apply in the UK ETA app for each person (Rong may be exempt as an Irish resident)" } },
-      { id: "drivers", who: "team", text: { zh: "确认司机资格：30–80 岁、驾照满 13 年、驾照 + 国际驾照 + 护照同一国家签发", en: "Check drivers qualify: age 30–80, licence held 13+ yrs, licence + IDP + passport from the same country" } },
       { id: "yinghui", who: "team", text: { zh: "拿到颖和辉的航班时间", en: "Get Ying & Hui's flight times" } },
-      { id: "shuttle", who: "team", text: { zh: "问 Clayton 酒店 11/6 最早的接驳车时间", en: "Ask Clayton about the earliest shuttle on 6 Nov" } },
     ],
   },
   {
