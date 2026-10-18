@@ -214,7 +214,8 @@ export const stays: Stay[] = [
   },
 ];
 
-export type Step = { t?: string; text: L; place?: string; cost?: L };
+// link: a Google Maps link for places we only have a link for (no map pin).
+export type Step = { t?: string; text: L; place?: string; link?: { label: L; url: string }; cost?: L };
 
 export type Day = {
   n: number; // 0 = travel day, 14 = home
@@ -268,7 +269,7 @@ export const days: Day[] = [
       { t: "06:00", text: { zh: "抵达都柏林 T1。今天凌晨爱尔兰时间调慢 1 小时，手机会自动更新", en: "Land Dublin T1. Irish clocks went back 1 hour overnight — phones update automatically" }, place: "airport" },
       { t: "07:30", text: { zh: "Alamo 取车：出口 → 4 号区坐租车接驳巴士到 Eastlands。告诉柜台要开去北爱尔兰（跨境费）、登记其他司机", en: "Alamo pick-up: Zone 4 car-rental shuttle to Eastlands. Tell the counter you'll drive to Northern Ireland (cross-border fee) and add the extra drivers" }, place: "airport" },
       { t: "09:00", text: { zh: "建议：去霍斯渔港吃早餐、看海豹、海边散步；午餐海鲜浓汤、炸鱼薯条", en: "Suggested: Howth harbour — breakfast, seals, seaside stroll; chowder or fish & chips for lunch" }, place: "howth" },
-      { t: "13:30", text: { zh: "去容住的地方看看（按原计划）", en: "Visit Rong's place (as planned)" } },
+      { t: "13:30", text: { zh: "去容住的地方看看（按原计划）", en: "Visit Rong's place (as planned)" }, link: { label: { zh: "容的住处", en: "Rong's place" }, url: "https://maps.app.goo.gl/6v13iY8qQKzKPsX9A" } },
       { t: "15:00", text: { zh: "凤凰公园看野鹿，离住处 10 分钟", en: "Phoenix Park — wild deer, 10 min from the flat" }, place: "phoenix" },
       { t: "16:15", text: { zh: "超市买早餐和零食（附近 Tesco / Lidl）", en: "Supermarket for breakfast & snacks (Tesco / Lidl nearby)" } },
       { t: "17:00", text: { zh: "入住，喝热汤，早点休息", en: "Check in, warm soup, early night" } },

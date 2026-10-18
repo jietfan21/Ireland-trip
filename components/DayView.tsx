@@ -139,6 +139,16 @@ export default function DayView({ day }: { day: Day }) {
                       📍 {p(pl)} →
                     </a>
                   )}
+                  {s.link && (
+                    <a
+                      href={s.link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-shamrock-soft px-3 py-1 text-[14px] font-semibold text-shamrock"
+                    >
+                      📍 {p(s.link.label)} →
+                    </a>
+                  )}
                 </div>
               </li>
             );
