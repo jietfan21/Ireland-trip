@@ -1,6 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { animatedGoldValue, nextWheelRotation, stealCandidates, mirrorOrderChanged } from "./piratePresentation.ts";
+import { fittedWheelSize, animatedGoldValue, nextWheelRotation, stealCandidates, mirrorOrderChanged } from "./piratePresentation.ts";
+
+test("wheel stays inside short, narrow and resized stages with room for its decoration", () => {
+  for (const [width, height] of [[354, 250], [354, 125], [284, 400], [420, 600], [100, 60]]) {
+    const size = fittedWheelSize(width, height);
+    assert.ok(size + 24 <= width);
+    assert.ok(size + 28 <= height);
+    assert.ok(size <= 350);
+  }
+  assert.equal(fittedWheelSize(354, 125), 97);
+  assert.equal(fittedWheelSize(0, 0), 0);
+  assert.equal(fittedWheelSize(300, 10), 0);
+});
 
 test("gold count stays between balances and finishes at the exact server total", () => {
   for (const [from, to] of [[1000, 1500], [1500, 1200], [0, 500], [2345, 2375]]) {
