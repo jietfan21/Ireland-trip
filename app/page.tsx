@@ -174,14 +174,14 @@ function BottomNav({ tab }: { tab: Tab }) {
           return (
             <button
               key={id}
+              aria-label={t(id === "tools" ? "checklist" : id)}
               aria-current={on ? "page" : undefined}
               onClick={() => go(id)}
-              className={`flex flex-col items-center gap-0.5 pb-1 pt-2 text-[13px] font-semibold ${on ? "text-shamrock" : "text-sub"}`}
+              className={`grid min-h-14 place-items-center py-1.5 ${on ? "text-shamrock" : "text-sub"}`}
             >
-              <span className={`grid h-8 w-14 place-items-center rounded-full ${on ? "bg-shamrock-soft" : ""}`}>
-                <Icon size={22} strokeWidth={on ? 2.5 : 2} />
+              <span className={`grid h-11 w-14 place-items-center rounded-full ${on ? "bg-shamrock-soft" : ""}`}>
+                <Icon size={24} strokeWidth={on ? 2.5 : 2} aria-hidden="true" />
               </span>
-              {t(id === "tools" ? "checklist" : id)}
             </button>
           );
         })}

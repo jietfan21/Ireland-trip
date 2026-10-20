@@ -69,7 +69,6 @@ body {
 
 /* Crew strip (components/Crew.tsx): stick figures wandering on the Today tab. */
 .crew-playground { isolation: isolate; }
-.crew-gesture-hint { position: absolute; inset: 0 0 auto; text-align: center; color: var(--color-sub, #718077); font-size: 10px; line-height: 1.5; pointer-events: none; }
 .crew-fig {
   cursor: grab;
   touch-action: none;

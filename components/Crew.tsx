@@ -342,7 +342,6 @@ export default function Crew({ day }: { day: Day }) {
 
   return (
     <div ref={strip} className="crew-playground relative w-full overflow-hidden" style={{ height: STRIP_H }} data-crew>
-      <p className="crew-gesture-hint">{p({ zh: "轻点聊天 · 按住抛起来 · 放在一起击掌", en: "Tap to chat · Hold & toss · Bring together to high-five" })}</p>
       <div className="absolute inset-x-0 h-0.5 rounded bg-line" style={{ bottom: GROUND }} />
       {cast.map((c) => (
         <Figure
