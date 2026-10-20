@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { doneAlready } from "./trip";
 
 // localStorage can throw (private mode, blocked storage) — never let it break the app.
 export function readLocal<T>(key: string, fallback: T): T {
@@ -40,7 +41,8 @@ export function useLocal<T>(key: string, fallback: T) {
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 let client: SupabaseClient | null = null;
-function db() {
+// One shared client (null when the keys aren't configured); used by the checklist and the pirate game.
+export function supabase() {
   if (!url || !anon) return null;
   client ??= createClient(url, anon, { auth: { persistSession: false } });
   return client;
@@ -49,6 +51,8 @@ export const sharedEnabled = Boolean(url && anon);
 
 type Ticks = Record<string, boolean>;
 const TICKS_KEY = "ie.ticks";
+// Saved ticks (local or shared) win over these, so an untick sticks.
+const PRESET: Ticks = Object.fromEntries(doneAlready.map((k) => [k, true]));
 
 // Checklist ticks: key is `${itemId}:${personId}` (team to-dos use personId "team").
 // Shared through Supabase when configured, otherwise kept on this phone.
@@ -61,17 +65,17 @@ export function useTicks() {
   };
 
   useEffect(() => {
-    setTicks(readLocal<Ticks>(TICKS_KEY, {}));
-    const supa = db();
+    setTicks({ ...PRESET, ...readLocal<Ticks>(TICKS_KEY, {}) });
+    const supa = supabase();
     if (!supa) return;
     let alive = true;
     const load = async () => {
       const { data } = await supa.from("ireland_checks").select("key, done");
       if (!alive || !data) return;
-      const next: Ticks = {};
-      for (const r of data) next[r.key] = r.done;
-      setTicks(next);
-      writeLocal(TICKS_KEY, next);
+      const saved: Ticks = {};
+      for (const r of data) saved[r.key] = r.done;
+      setTicks({ ...PRESET, ...saved });
+      writeLocal(TICKS_KEY, saved);
     };
     load();
     const channel = supa
@@ -95,7 +99,7 @@ export function useTicks() {
     ref.current = next;
     setTicksState(next);
     writeLocal(TICKS_KEY, next);
-    const supa = db();
+    const supa = supabase();
     if (supa) await supa.from("ireland_checks").upsert({ key, done, by, updated_at: new Date().toISOString() });
   }, []);
 

@@ -12,6 +12,8 @@ import MapView from "@/components/MapView";
 import InfoView from "@/components/InfoView";
 import ToolsView from "@/components/ToolsView";
 import WhoAreYou from "@/components/WhoAreYou";
+import PirateSheet from "@/components/PirateSheet";
+import { useDrawAvailable } from "@/lib/pirateStore";
 
 const TABS: { id: Tab; icon: typeof House }[] = [
   { id: "today", icon: House },
@@ -28,6 +30,8 @@ export default function Page() {
   const [tab, setTab] = useState<Tab>("today");
   const [jump, setJump] = useState<number | undefined>();
   const [picking, setPicking] = useState(false);
+  const [pirate, setPirate] = useState(false);
+  const [pirateTick, setPirateTick] = useState(0);
 
   useEffect(() => {
     setLang(readLocal<Lang>("ie.lang", "zh"));
@@ -64,7 +68,23 @@ export default function Page() {
   return (
     <AppCtx.Provider value={{ lang, person, go }}>
       {(!person || picking) && <WhoAreYou onPick={pick} onLang={toggleLang} />}
-      <Header onLang={toggleLang} onSwitch={() => setPicking(true)} />
+      <Header
+        onLang={toggleLang}
+        onSwitch={() => {
+          setPirate(false);
+          setPicking(true);
+        }}
+        onPirate={() => setPirate(true)}
+        pirateTick={pirateTick}
+      />
+      {pirate && person && (
+        <PirateSheet
+          onClose={() => {
+            setPirate(false);
+            setPirateTick((n) => n + 1);
+          }}
+        />
+      )}
       <main className="mx-auto w-full max-w-md px-4 pb-28 pt-3">
         {tab === "today" && <TodayView jumpTo={jump} />}
         {tab === "trip" && <TripView />}
@@ -77,8 +97,9 @@ export default function Page() {
   );
 }
 
-function Header({ onLang, onSwitch }: { onLang: () => void; onSwitch: () => void }) {
+function Header({ onLang, onSwitch, onPirate, pirateTick }: { onLang: () => void; onSwitch: () => void; onPirate: () => void; pirateTick: number }) {
   const { lang, person, t } = useApp();
+  const drawReady = useDrawAvailable(person?.id ?? null, pirateTick);
   return (
     <header className="pt-safe sticky top-0 z-30 border-b border-line bg-cream/95 backdrop-blur">
       <div className="mx-auto flex max-w-md items-center justify-between gap-3 px-4 py-2.5">
@@ -94,6 +115,12 @@ function Header({ onLang, onSwitch }: { onLang: () => void; onSwitch: () => void
           >
             {lang === "zh" ? "EN" : "中文"}
           </button>
+          {person && (
+            <button onClick={onPirate} aria-label={t("pirate")} className="relative grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-[20px]">
+              🏴‍☠️
+              {drawReady && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-cream bg-red-500" />}
+            </button>
+          )}
           {person && (
             <button onClick={onSwitch} aria-label={t("change")}>
               <Avatar person={person} size={40} />

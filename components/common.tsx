@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import { Navigation, Phone } from "lucide-react";
 import type { Lang, UiKey } from "@/lib/i18n";
 import { tr } from "@/lib/i18n";
@@ -78,13 +78,26 @@ export function Card({ children, className = "" }: { children: React.ReactNode; 
   return <section className={`rounded-3xl border border-line bg-card p-4 shadow-[0_2px_10px_#17322d0d] ${className}`}>{children}</section>;
 }
 
+// Head sticker (public/avatars/<id>.webp) on the person's colour; falls back to the initial if it fails to load.
 export function Avatar({ person, size = 44 }: { person: Person; size?: number }) {
+  const [broken, setBroken] = useState(false);
   return (
     <span
-      className="inline-grid shrink-0 place-items-center rounded-full font-bold text-white"
+      className="relative inline-grid shrink-0 place-items-center overflow-visible rounded-full font-bold text-white"
       style={{ width: size, height: size, background: person.color, fontSize: size * 0.42 }}
     >
-      {person.zh.slice(-1)}
+      {broken ? (
+        person.zh.slice(-1)
+      ) : (
+        <img
+          src={`/avatars/${person.id}.webp`}
+          alt={person.en}
+          draggable={false}
+          onError={() => setBroken(true)}
+          className="pointer-events-none absolute max-w-none select-none"
+          style={{ width: size * 1.22, height: size * 1.22, left: -size * 0.11, top: -size * 0.14 }}
+        />
+      )}
     </span>
   );
 }

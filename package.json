@@ -8,7 +8,8 @@
     "prebuild": "node -e \"require('fs').copyFileSync('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs','public/maplibre-gl-worker.mjs')\"",
     "build": "next build",
     "start": "npx serve out",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "node --test lib/*.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

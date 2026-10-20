@@ -52,3 +52,94 @@ body {
   font-family: var(--font-sans);
   box-shadow: 0 8px 24px #17322d26;
 }
+
+/* Crew strip (components/Crew.tsx): stick figures wandering on the Today tab. */
+.crew-fig {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+.crew-fig .leg-l,
+.crew-fig .leg-r,
+.crew-fig .arm-l,
+.crew-fig .arm-r {
+  transform-box: view-box; /* each limb sets its own joint as transform-origin inline */
+}
+@keyframes crew-swing {
+  from { transform: rotate(-22deg); }
+  to { transform: rotate(22deg); }
+}
+.crew-walk .leg-l,
+.crew-walk .arm-r { animation: crew-swing 0.55s ease-in-out infinite alternate; }
+.crew-walk .leg-r,
+.crew-walk .arm-l { animation: crew-swing 0.55s ease-in-out infinite alternate-reverse; }
+
+@keyframes crew-jump {
+  0%, 100% { translate: 0 0; }
+  40% { translate: 0 -22px; }
+  60% { translate: 0 -22px; }
+}
+.crew-jump { animation: crew-jump 0.5s ease-out; }
+
+@keyframes crew-dangle {
+  from { rotate: -8deg; }
+  to { rotate: 8deg; }
+}
+.crew-dangle { animation: crew-dangle 0.9s ease-in-out infinite alternate; transform-origin: top center; }
+
+@keyframes crew-wobble {
+  0% { rotate: -6deg; }
+  40% { rotate: 5deg; }
+  75% { rotate: -2deg; }
+  100% { rotate: 0deg; }
+}
+.crew-wobble { animation: crew-wobble 0.45s ease-out; transform-origin: bottom center; }
+
+@keyframes crew-wave {
+  from { transform: rotate(-150deg); }
+  to { transform: rotate(-200deg); }
+}
+.crew-wave .arm-r { animation: crew-wave 0.5s ease-in-out 3 alternate; }
+.crew-waving .arm-r { animation: crew-wave 0.5s ease-in-out infinite alternate; } /* home day: everyone keeps waving */
+
+.crew-lifted { scale: 1.12; filter: drop-shadow(0 6px 6px #17322d40); z-index: 10; }
+
+@keyframes crew-burst {
+  0% { transform: translate(0, 0) scale(0.4); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.1); opacity: 0; }
+}
+.crew-burst { animation: crew-burst 0.7s ease-out forwards; }
+
+@keyframes crew-bubble-in {
+  from { transform: translateX(-50%) scale(0.6); opacity: 0; }
+  to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+.crew-bubble-in { animation: crew-bubble-in 0.18s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .crew-walk .leg-l, .crew-walk .leg-r, .crew-walk .arm-l, .crew-walk .arm-r,
+  .crew-dangle, .crew-jump { animation: none; }
+}
+
+/* Pirate game (components/PirateSheet.tsx) */
+@keyframes pirate-land {
+  0% { transform: scale(0.3); opacity: 0; }
+  70% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.pirate-land { animation: pirate-land 0.4s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+@keyframes pirate-roll {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-6px) scale(1.08); }
+}
+.pirate-roll { animation: pirate-roll 0.1s ease-in-out infinite alternate; }
+@keyframes pirate-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.pirate-pulse { animation: pirate-pulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .pirate-roll, .pirate-pulse { animation: none; }
+}

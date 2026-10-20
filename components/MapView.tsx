@@ -23,7 +23,7 @@ const dayPts = (d: Day) => d.stops.map(resolve).filter((p): p is Pt => !!p);
 const dayStops = (d: Day): LngLat[] => dayPts(d).map((p) => [p.lng, p.lat]);
 
 // Whole-trip view: one marker per stay, labelled with the day(s) we drive in to it.
-// Stays a few km apart (Dublin flat / Clayton hotel) share one marker so badges don't overlap.
+// Stays a few km apart (Croke Park / Clayton hotels) share one marker so badges don't overlap.
 const arrivals = (() => {
   const out: { pt: Pt; days: number[]; towns: L[] }[] = [];
   let prev: string | undefined;

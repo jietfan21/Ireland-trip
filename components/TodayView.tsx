@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ListChecks } from "lucide-react";
 import { days, TRIP_END, TRIP_START } from "@/lib/trip";
+import { useWeather } from "@/lib/weather";
+import Crew from "./Crew";
 import DayView from "./DayView";
 import { daysBetween, irelandToday, useApp } from "./common";
 
@@ -24,16 +26,18 @@ export default function TodayView({ jumpTo }: { jumpTo?: number }) {
   }, [jumpTo]);
 
   const real = useMemo(() => (today ? todayIndex(today) : 0), [today]);
+  const day = days[idx];
+  const weather = useWeather(day);
   if (!today) return null;
 
   const before = today < TRIP_START ? daysBetween(today, TRIP_START) : 0;
   const after = today > TRIP_END;
-  const day = days[idx];
   const isPreview = idx !== real || before > 0;
 
   return (
     <div className="space-y-4">
       {person && <p className="text-[17px] text-sub">{t("hi", { name: p(person) })} 👋</p>}
+      <Crew day={day} />
 
       {before > 0 && (
         <button
@@ -79,7 +83,7 @@ export default function TodayView({ jumpTo }: { jumpTo?: number }) {
         </button>
       </div>
 
-      <DayView day={day} />
+      <DayView day={day} weather={weather} />
     </div>
   );
 }
