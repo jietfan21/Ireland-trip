@@ -1,449 +1,343 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { BookOpen, HelpCircle, Shield, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import "./pirate-game.css";
 import { people, type Person } from "@/lib/trip";
-import {
-  DAYS,
-  MAX_SHIELDS,
-  WEDGES,
-  coinValue,
-  dayMultiplier,
-  eventText,
-  mirrorPrice,
-  leaderboard,
-  nextDublinMidnightMs,
-  pickWedge,
-  todayOverride,
-  tripDayNumber,
-  victims,
-  visibleEvents,
-  type Event,
-  type PlayerRow,
-} from "@/lib/pirate";
+import { DAYS, MAX_SHIELDS, WEDGES, dayMultiplier, eventText, mirrorPrice, leaderboard, nextDublinMidnightMs, pickWedge, todayOverride, tripDayNumber, victims, visibleEvents, type Event, type PlayerRow } from "@/lib/pirate";
+import { mirrorOrderChanged, nextWheelRotation, stealCandidates, type MirrorOrder } from "@/lib/piratePresentation";
 import { irelandToday, usePirate, type SpinResult } from "@/lib/pirateStore";
-import { Avatar, Card, useApp } from "./common";
+import { readLocal, writeLocal } from "@/lib/store";
+import { Avatar, useApp } from "./common";
+import PirateWheel, { StealWheel } from "./PirateWheel";
 
-const WHEEL_MS = 3400;
+type Phase = "idle" | "spinning" | "stealing" | "pick" | "impact" | "landed";
+type Panel = "defend" | "crew" | "rules" | null;
+type Snapshot = { mine: PlayerRow | null; board: ReturnType<typeof leaderboard>; events: Event[] };
+type Caption = { text: string; good: boolean; icon: string };
 const ids = people.map((p) => p.id);
 const who = (id: string) => people.find((p) => p.id === id) as Person;
-
-type Phase = "idle" | "spinning" | "pick" | "landed";
-type Board = ReturnType<typeof leaderboard>;
-type Snapshot = { mine: PlayerRow | null; board: Board; events: Event[] };
-
-function fmtCountdown(ms: number) {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const two = (n: number) => String(n).padStart(2, "0");
-  return `${two(Math.floor(s / 3600))}:${two(Math.floor((s % 3600) / 60))}:${two(s % 60)}`;
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+function countdown(ms: number) {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
 export default function PirateSheet({ onClose }: { onClose: () => void }) {
-  const { t, p, person } = useApp();
+  const { lang, t, p, person } = useApp();
+  const say = (zh: string, en: string) => lang === "zh" ? zh : en;
   const me = person?.id ?? null;
   const [today, setToday] = useState(() => todayOverride(location.search, location.hostname) ?? irelandToday());
   const game = usePirate(me, today);
   const [phase, setPhase] = useState<Phase>("idle");
-  const [wedge, setWedge] = useState<{ index: number; n: number } | null>(null); // where the wheel stops; n re-triggers the spin
-  const [caption, setCaption] = useState<{ text: string; good: boolean } | null>(null);
-  const [countdown, setCountdown] = useState("");
-  const [frozen, setFrozen] = useState<Snapshot | null>(null); // what the cards show while the wheel turns
+  const [panel, setPanel] = useState<Panel>(null);
+  const [rotation, setRotation] = useState(0);
+  const [wedge, setWedge] = useState<number | null>(null);
+  const [caption, setCaption] = useState<Caption | null>(null);
+  const [frozen, setFrozen] = useState<Snapshot | null>(null);
   const [busy, setBusy] = useState(false);
-  const spins = useRef(0);
-
-  useEffect(() => {
-    const tick = () => {
-      setToday(todayOverride(location.search, location.hostname) ?? irelandToday());
-      setCountdown(fmtCountdown(nextDublinMidnightMs(new Date()) - Date.now()));
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
-
+  const [steal, setSteal] = useState<{ candidates: string[]; victim: string } | null>(null);
+  const [impact, setImpact] = useState<SpinResult | null>(null);
+  const [timeLeft, setTimeLeft] = useState("");
+  const [reduced, setReduced] = useState(false);
+  const [sound, setSound] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [order, setOrder] = useState<MirrorOrder | null>(null);
+  const [notice, setNotice] = useState("");
+  const lock = useRef(false);
+  const alive = useRef(true);
+  const audio = useRef<AudioContext | null>(null);
+  const soundEnabled = useRef(false);
+  const wheelMs = reduced ? 100 : 3400;
+  const stealMs = reduced ? 100 : 2600;
   const liveBoard = useMemo(() => leaderboard(ids, game.rows, game.dbSeason), [game.rows, game.dbSeason]);
   const liveEvents = useMemo(() => visibleEvents(game.events, ids, me), [game.events, me]);
-  const view: Snapshot = phase === "spinning" && frozen ? frozen : { mine: game.mine, board: liveBoard, events: liveEvents };
+  const view = frozen ?? { mine: game.mine, board: liveBoard, events: liveEvents };
   const { mine, board, events } = view;
   const left = mine?.spins ?? 0;
-  const contested = board.some((x) => x.gold !== board[0].gold); // no crown while everyone is tied
-  const targets = useMemo(() => (me ? victims(me, ids, game.rows, game.dbSeason, today) : []), [me, game.rows, game.dbSeason, today]);
-  const price = mirrorPrice(mine?.gold ?? 0);
-  const name = (id: string) => {
-    const x = people.find((q) => q.id === id);
-    return x ? p(x) : id;
-  };
+  const price = mirrorPrice(game.mine?.gold ?? 0);
+  const targets = useMemo(() => me ? victims(me, ids, game.rows, game.dbSeason, today) : [], [me, game.rows, game.dbSeason, today]);
+  const name = (id: string) => { const person = people.find((x) => x.id === id); return person ? p(person) : id; };
   const loading = !game.ready || (game.online && game.season !== "over" && !game.mine);
-  const season = game.season;
-  const seasonLabel = season === "practice" ? t("practiceBanner") : season === "trip" ? t("dayOf", { n: tripDayNumber(today) }) : t("gameOver");
+  const ended = game.season === "over";
+  const contested = board.some((x) => x.gold !== board[0]?.gold);
+  const seasonLabel = game.season === "practice" ? t("practiceBanner") : ended ? t("gameOver") : t("dayOf", { n: tripDayNumber(today) });
 
-  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  useEffect(() => {
+    alive.current = true;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    setSound(readLocal("ie.pirate.sound", false));
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotion = () => setReduced(motion.matches);
+    updateMotion();
+    motion.addEventListener("change", updateMotion);
+    const tick = () => {
+      setToday(todayOverride(location.search, location.hostname) ?? irelandToday());
+      setTimeLeft(countdown(nextDublinMidnightMs(new Date()) - Date.now()));
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => {
+      alive.current = false;
+      document.body.style.overflow = previousOverflow;
+      motion.removeEventListener("change", updateMotion);
+      clearInterval(timer);
+      void audio.current?.close();
+      audio.current = null;
+    };
+  }, []);
 
-  const land = (res: SpinResult, index: number) => {
+  useEffect(() => { soundEnabled.current = sound; }, [sound]);
+
+  function chime(kind: "spin" | "win" | "miss") {
+    if (!soundEnabled.current) return;
+    try {
+      const context = audio.current ??= new AudioContext();
+      void context.resume().catch(() => {});
+      const notes = kind === "win" ? [523, 659, 784, 1047] : kind === "spin" ? [330, 440, 550] : [260, 196];
+      notes.forEach((frequency, i) => {
+        const oscillator = context.createOscillator(), gain = context.createGain();
+        oscillator.type = "triangle";
+        oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.0001, context.currentTime + i * 0.085);
+        gain.gain.exponentialRampToValueAtTime(0.07, context.currentTime + i * 0.085 + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + i * 0.085 + 0.2);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.start(context.currentTime + i * 0.085);
+        oscillator.stop(context.currentTime + i * 0.085 + 0.22);
+      });
+    } catch { /* Sound is optional on browsers without Web Audio. */ }
+  }
+
+  function land(res: SpinResult, index: number) {
     const w = WEDGES[index];
+    let text = "", good = true, icon = w.emoji;
     if (!res.applied) {
-      // The wheel already turned; say why it didn't count instead of going quiet.
-      setCaption({ text: res.reason === "no spins" ? t("cap_noSpins") : t("cap_noSignal"), good: false });
-      setPhase("landed");
-      return;
-    }
-    const v = res.victim ? name(res.victim) : "";
-    let text = "";
-    let good = true;
-    if (w.kind === "win") text = t("cap_coins", { n: res.amount || w.amount || 0 });
+      text = res.reason === "no spins" ? t("cap_noSpins") : t("cap_noSignal");
+      good = false; icon = "📡";
+    } else if (w.kind === "win") text = t("cap_coins", { n: res.amount });
     else if (w.kind === "spins") text = t("cap_spins");
     else if (w.kind === "shield") text = res.amount === 100 ? t("cap_shieldFull") : t("cap_shield");
-    else if (w.kind === "steal") {
-      if (res.outcome === "hit") text = t("cap_stealHit", { who: v, n: res.amount });
-      else if (res.outcome === "blocked") (text = t("cap_stealBlocked", { who: v })), (good = false);
-      else if (res.outcome === "reflected") (text = t("cap_stealReflected", { who: v, n: res.amount })), (good = false);
-      else (text = t("cap_stealNone")), (good = false);
-    } else if (w.kind === "boom") {
-      if (res.outcome === "hit") text = t("cap_boomHit", { who: v, n: res.amount });
-      else if (res.outcome === "blocked") (text = t("cap_boomBlocked", { who: v })), (good = false);
-      else if (res.outcome === "reflected") (text = t("cap_boomReflected", { who: v, n: res.amount })), (good = false);
-      else (text = t("cap_boomNone")), (good = false);
+    else {
+      const v = res.victim ? name(res.victim) : "";
+      if (res.outcome === "blocked") {
+        text = w.kind === "steal" ? t("cap_stealBlocked", { who: v }) : t("cap_boomBlocked", { who: v });
+        good = false; icon = "🛡️";
+      } else if (res.outcome === "reflected") {
+        text = w.kind === "steal" ? t("cap_stealReflected", { who: v, n: res.amount }) : t("cap_boomReflected", { who: v, n: res.amount });
+        good = false; icon = "🪞";
+      } else if (res.outcome === "hit") text = w.kind === "steal" ? t("cap_stealHit", { who: v, n: res.amount }) : t("cap_boomHit", { who: v, n: res.amount });
+      else { text = w.kind === "steal" ? t("cap_stealNone") : t("cap_boomNone"); good = false; icon = "🌊"; }
     }
-    setCaption({ text, good });
+    setCaption({ text, good, icon });
+    setFrozen(null);
     setPhase("landed");
-  };
+    chime(good ? "win" : "miss");
+  }
 
-  const spin = async () => {
-    if (!me || left <= 0 || busy) return;
-    const index = pickWedge(Math.random);
-    const w = WEDGES[index];
-    setBusy(true);
-    setFrozen({ mine: game.mine, board: liveBoard, events: liveEvents });
-    setCaption(null);
-    setWedge({ index, n: ++spins.current });
-    setPhase("spinning");
-    try {
-      if (w.kind === "boom") {
-        // The spin is used now (server marks the boom pending); the victim comes next.
-        const [res] = await Promise.all([game.spin("boom"), wait(WHEEL_MS + 200)]);
-        if (res.applied) setPhase("pick");
-        else land(res, index);
-      } else {
-        const [res] = await Promise.all([game.spin(w.kind, w.amount), wait(WHEEL_MS + 200)]);
-        land(res, index);
-      }
-    } finally {
-      setBusy(false);
+  async function reveal(res: SpinResult, index: number) {
+    if (res.applied && res.victim) {
+      setImpact(res);
+      setPhase("impact");
+      await wait(reduced ? 100 : 850);
     }
-  };
+    if (alive.current) land(res, index);
+  }
 
-  const BOOM_INDEX = WEDGES.findIndex((w) => w.kind === "boom");
-  const boom = async (victim: string | null) => {
-    if (busy) return;
-    setBusy(true);
+  async function spin() {
+    if (!me || left <= 0 || lock.current || !game.online || loading || ended) return;
+    lock.current = true; setBusy(true);
+    const index = pickWedge(Math.random), w = WEDGES[index];
+    const snapshot = { mine: game.mine, board: liveBoard, events: liveEvents };
+    setFrozen(snapshot); setCaption(null); setSteal(null); setImpact(null); setWedge(index);
+    setRotation((previous) => nextWheelRotation(previous, index, WEDGES.length));
+    setPhase("spinning"); chime("spin");
+    try {
+      const [res] = await Promise.all([game.spin(w.kind, w.amount), wait(wheelMs + 80)]);
+      if (!alive.current) return;
+      if (w.kind === "boom" && res.applied) {
+        setFrozen(null); setPhase("pick");
+      } else if (w.kind === "steal" && res.applied && res.victim) {
+        setSteal({ candidates: stealCandidates(snapshot.board, me, res.victim), victim: res.victim });
+        setPhase("stealing"); chime("spin");
+        await wait(stealMs + 100);
+        if (alive.current) await reveal(res, index);
+      } else land(res, index);
+    } catch {
+      if (alive.current) land({ applied: false, victim: null, amount: 0, outcome: null }, index);
+    } finally {
+      lock.current = false;
+      if (alive.current) setBusy(false);
+    }
+  }
+
+  const boomIndex = WEDGES.findIndex((w) => w.kind === "boom");
+  async function boom(victim: string | null) {
+    if (lock.current) return;
+    lock.current = true; setBusy(true);
+    setWedge(boomIndex);
+    setFrozen({ mine: game.mine, board: liveBoard, events: liveEvents });
     try {
       const res = await game.boomPick(victim);
-      if (!res.applied && res.reason === "no boom pending") setPhase("idle");
-      else land(res, wedge?.index ?? BOOM_INDEX);
+      if (!alive.current) return;
+      if (!res.applied && res.reason === "no boom pending") {
+        setPhase("idle"); setFrozen(null);
+      } else await reveal(res, boomIndex);
     } finally {
-      setBusy(false);
+      lock.current = false;
+      if (alive.current) setBusy(false);
     }
-  };
-
-  // A bomb spun earlier (app closed mid-pick, or another phone): straight to the victim pick.
+  }
   useEffect(() => {
     if (game.mine?.boom_pending && phase === "idle") setPhase("pick");
   }, [game.mine?.boom_pending, phase]);
 
-  const exchange = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      await game.exchange();
-    } finally {
-      setBusy(false);
+  function openPanel(next: Panel) { setPanel(next); setOrder(null); setNotice(""); }
+  function quote(kind: "trade" | "buy") {
+    if (!game.mine) return;
+    setOrder({ kind, gold: game.mine.gold, shields: game.mine.shields, price });
+    setNotice("");
+  }
+  async function confirmMirror() {
+    if (!order || !game.mine || lock.current) return;
+    if (mirrorOrderChanged(order, game.mine, price)) {
+      setOrder({ ...order, gold: game.mine.gold, shields: game.mine.shields, price });
+      setNotice(say("余额有变化，请查看新价格后再次确认。", "Your balance changed. Review the updated cost and confirm again."));
+      return;
     }
-  };
-  const buy = async () => {
-    if (busy) return;
-    setBusy(true);
+    lock.current = true; setBusy(true);
     try {
-      await game.buyMirror();
-    } finally {
-      setBusy(false);
-    }
-  };
+      const result = await (order.kind === "trade" ? game.exchange() : game.buyMirror());
+      if (!alive.current) return;
+      if (result.applied) {
+        setOrder(null); chime("win");
+        setNotice(say("🪞 镜子已装备，下次攻击会被反弹！", "🪞 Mirror equipped. Your next incoming attack will bounce back!"));
+      } else {
+        const messages: Record<string, string> = {
+          "mirror held": say("你已经有一面镜子。", "You already have a mirror."),
+          "not enough gold": say("金币不足，请取消并重新查看余额。", "Not enough gold. Cancel and check your balance."),
+          "not enough shields": say("需要两块盾牌。", "You need two shields."),
+        };
+        setNotice(messages[result.reason ?? ""] ?? say("未能确认交易，请检查网络和余额后重试。", "Purchase not confirmed. Check your connection and balance before retrying."));
+      }
+    } finally { lock.current = false; if (alive.current) setBusy(false); }
+  }
+
+  const resolving = phase === "spinning" || phase === "stealing" || phase === "impact";
+  const canSpin = !busy && !loading && game.online && left > 0 && !ended && phase !== "pick";
+  const resultIcon = impact?.outcome === "blocked" ? "🛡️" : impact?.outcome === "reflected" ? "🪞" : wedge === boomIndex ? "💥" : "🪙";
+  const panelTitle = order ? (order.kind === "trade" ? say("用盾牌换镜子？", "Trade shields for a mirror?") : say("购买镜子？", "Buy a mirror?"))
+    : panel === "defend" ? say("守护你的宝藏", "Protect your treasure") : panel === "crew" ? t("leaderboard") : t("howToPlay");
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-cream pt-safe" data-online={String(game.online)} data-ready={String(game.ready)}>
-      <div className="mx-auto w-full max-w-md px-4 pb-16">
-        <div className="sticky top-0 z-10 -mx-4 flex items-center justify-between gap-3 bg-cream/95 px-4 py-3 backdrop-blur">
-          <div>
-            <h1 className="text-[22px] font-bold leading-tight">🏴‍☠️ {t("pirate")}</h1>
-            <p className="text-[13px] text-sub">{season === "trip" ? `${seasonLabel} · ${today}` : seasonLabel}</p>
+    <div className="pirate-game pt-safe" data-online={String(game.online)} data-ready={String(game.ready)}>
+      <div className="pirate-seascape" aria-hidden="true"><span className="pirate-island pirate-island-left" /><span className="pirate-island pirate-island-right" /><span className="pirate-sail">⛵</span></div>
+      <div className="pirate-shell">
+        <header className="pirate-header">
+          <div><div className="pirate-eyebrow">{say("爱尔兰 · 家族争霸", "IRELAND · FAMILY RIVALRY")}</div><h1>☘ {say("三叶草海湾", "Clover Cove")}</h1></div>
+          <div className="pirate-header-actions">
+            <button className="pirate-icon-button" aria-label={sound ? say("关闭音效", "Mute sound") : say("开启音效", "Enable sound")} aria-pressed={sound} onClick={() => { setSound(!sound); writeLocal("ie.pirate.sound", !sound); }}>{sound ? <Volume2 size={19} /> : <VolumeX size={19} />}</button>
+            <button className="pirate-icon-button" onClick={onClose} disabled={busy} aria-label={say("返回行程", "Back to trip")}><X size={20} /></button>
           </div>
-          <button onClick={onClose} aria-label="close" className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-card">
-            <X />
+        </header>
+
+        <div className="pirate-season"><span className="pirate-live-dot" />{seasonLabel}</div>
+
+        <section className="pirate-hud" aria-label={say("你的宝藏", "Your treasure")}>
+          <div className="pirate-player">{person && <Avatar person={person} size={36} />}<span>{person && p(person)}<small>{say("船长", "CAPTAIN")}</small></span></div>
+          <div className="pirate-balance"><small>{say("你的金币", "YOUR GOLD")}</small><strong key={mine?.gold} className={!resolving ? "pirate-balance-update" : ""}>🪙 {loading ? "—" : (mine?.gold ?? 1000).toLocaleString()}</strong></div>
+          <button className="pirate-defense-summary" disabled={busy} onClick={() => { openPanel("defend"); setHelp(false); }} aria-label={say("查看盾牌和镜子", "View shields and mirror")}>
+            <span>{Array.from({ length: MAX_SHIELDS }, (_, i) => <span key={i} className={i < (mine?.shields ?? 0) ? "" : "pirate-shield-empty"}>🛡️</span>)}<span className={mine?.mirror ? "" : "pirate-shield-empty"}>🪞</span></span><small>{say("防御装备", "DEFENSE")} ›</small>
           </button>
-        </div>
+        </section>
 
-        {!game.online && game.ready ? (
-          <Card className="mt-3 text-center text-[16px] text-sub">📡 {t("needsSignal")}</Card>
-        ) : loading ? (
-          <Card className="mt-3 py-10 text-center text-4xl">
-            <span className="pirate-roll inline-block">🏴‍☠️</span>
-          </Card>
-        ) : season === "over" ? (
-          <Card className="mt-3 text-center">
-            <div className="text-5xl">👑</div>
-            <div className="mt-2 text-[22px] font-bold">{t("gameOver")}</div>
-            <div className="mt-1 text-[16px] text-sub">
-              {t("king")}: {board.filter((x) => x.leader).map((x) => name(x.id)).join(" & ")}
-            </div>
-          </Card>
-        ) : (
-          person && (
-            <>
-              <Card className="mt-3">
-                <div className="flex items-center gap-3">
-                  <Avatar person={person} size={52} />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[15px] text-sub">{p(person)}</div>
-                    <div className="text-[30px] font-bold leading-tight">
-                      {(mine?.gold ?? 1000).toLocaleString()} <span className="text-[18px]">🪙</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[13px] text-sub">{t("spinsLeft", { n: left })}</div>
-                    <div className="text-[26px] font-bold leading-tight">🎰 {left}</div>
-                  </div>
-                </div>
-                <div className="mt-3 rounded-2xl bg-cream px-3 py-2">
-                  <div className="text-[15px]">
-                    <span className="text-sub">{t("yourShields")}</span>{" "}
-                    <span className="font-semibold">
-                      {"🛡️".repeat(mine?.shields ?? 0) || "—"}
-                      {mine?.mirror && " 🪞"}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      onClick={exchange}
-                      disabled={busy || !mine || mine.shields < 2 || mine.mirror}
-                      className="whitespace-nowrap rounded-full border border-line bg-card px-3 py-1.5 text-[13px] font-bold disabled:opacity-40"
-                    >
-                      {t("exchange")}
-                    </button>
-                    <button
-                      onClick={buy}
-                      disabled={busy || !mine || mine.mirror || mine.gold < price}
-                      className="whitespace-nowrap rounded-full border border-line bg-card px-3 py-1.5 text-[13px] font-bold disabled:opacity-40"
-                    >
-                      {t("buyMirror", { n: price.toLocaleString() })}
-                    </button>
-                  </div>
-                </div>
-              </Card>
+        <main className="pirate-play">
+          <div className="pirate-stage-heading">
+            <div className="pirate-eyebrow">{phase === "stealing" ? say("谁的宝藏会被偷走？", "WHOSE TREASURE WILL IT BE?") : phase === "pick" ? say("你的炸弹已准备好", "YOUR CANNON IS READY") : ended ? say("海湾的新王者", "THE COVE HAS ITS CHAMPION") : say("转出好运 · 偷走宝藏", "SPIN BIG. STEAL TREASURE.")}</div>
+            <h2>{phase === "stealing" ? say("寻找你的目标", "The stealing wheel") : phase === "pick" ? say("选择你的目标", "Choose your target") : ended ? t("gameOver") : say("幸运转盘", "Wheel of fortune")}</h2>
+          </div>
 
-              <Card className="mt-3 min-h-[200px] text-center">
-                {(phase === "spinning" || phase === "landed") && (
-                  <Wheel key={wedge?.n ?? -1} target={wedge?.index ?? BOOM_INDEX} settled={phase === "landed"} today={today} />
-                )}
+          <div className="pirate-stage" aria-busy={resolving}>
+            {phase === "stealing" && steal ? <StealWheel candidates={steal.candidates} victim={steal.victim} duration={stealMs} today={today} label={say("正在旋转目标转盘", "Target wheel spinning")} />
+              : <PirateWheel rotation={rotation} duration={wheelMs} today={today} label={say("幸运转盘，十格机会相同", "Lucky wheel, ten equally likely wedges")} />}
+            {phase === "pick" && <div className="pirate-target-picker">
+              <div className="pirate-target-top"><span>💣</span><p>{t("pickBoom")}</p></div>
+              <div className="pirate-targets">{targets.map((v) => <button key={v.id} disabled={busy || v.boomedToday} onClick={() => boom(v.id)}><Avatar person={who(v.id)} size={36} /><span>{name(v.id)}<small>{v.boomedToday ? t("boomedToday") : v.gold.toLocaleString() + " 🪙"}</small></span><span className="pirate-target-mark">⊕</span></button>)}</div>
+              {targets.every((v) => v.boomedToday) && <button className="pirate-gold-button" disabled={busy} onClick={() => boom(null)}>{t("cap_boomNone")}</button>}
+            </div>}
+            {phase === "impact" && impact?.victim && <div className={"pirate-impact pirate-impact-" + impact.outcome}><Avatar person={who(impact.victim)} size={82} /><span className="pirate-impact-icon">{resultIcon}</span><strong>{name(impact.victim)}</strong></div>}
+          </div>
 
-                {phase === "pick" && (
-                  <div>
-                    <div className="text-[18px] font-bold">💣 {t("pickBoom")}</div>
-                    {targets.every((v) => v.boomedToday) && (
-                      <button onClick={() => boom(null)} disabled={busy} className="mt-3 w-full rounded-3xl border border-line bg-cream py-3 text-[16px] font-bold">
-                        {t("cap_boomNone")}
-                      </button>
-                    )}
-                    <ul className="mt-3 space-y-2 text-left">
-                      {targets.map((v) => (
-                        <li key={v.id}>
-                          <button
-                            disabled={busy || v.boomedToday}
-                            onClick={() => boom(v.id)}
-                            className="flex w-full items-center gap-3 rounded-2xl border border-line bg-cream px-3 py-2 active:scale-[.98] disabled:opacity-40"
-                          >
-                            <Avatar person={who(v.id)} size={36} />
-                            <span className="flex-1 text-[16px] font-semibold">{name(v.id)}</span>
-                            <span className="text-[14px] text-sub">{v.boomedToday ? `💣 ${t("boomedToday")}` : `${v.gold.toLocaleString()} 🪙`}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+          <div className="pirate-result-slot" role="status" aria-live="polite" aria-atomic="true">
+            {loading ? <p className="pirate-soft-text">{say("正在装载宝藏…", "Loading your treasure…")}</p>
+              : !game.online ? <div className="pirate-connection"><span>📡 {t("needsSignal")}</span><button onClick={() => game.open()}>{say("重试", "Retry")}</button></div>
+              : phase === "landed" && caption ? <div className={"pirate-result " + (caption.good ? "pirate-result-good" : "pirate-result-bad")}><span>{caption.icon}</span><strong>{caption.text}</strong>{caption.good && <div className="pirate-sparkles" aria-hidden="true">✦ <span>✦</span> ✧</div>}</div>
+              : phase === "spinning" ? <p className="pirate-soft-text">{say("好运正在转动…", "A little luck is on its way…")}</p>
+              : phase === "stealing" ? <p className="pirate-soft-text">{say("转盘决定目标，不会额外消耗次数", "Finding your target · no extra spin used")}</p>
+              : phase === "impact" ? <p className="pirate-soft-text">{say("宝藏争夺战！", "A clash over treasure!")}</p>
+              : phase === "pick" ? <p className="pirate-soft-text">{say("炸掉 20% 金币，每人每天最多一次", "Destroy 20% of their gold · once per target per day")}</p>
+              : ended ? <p className="pirate-champion">👑 {board.filter((x) => x.leader).map((x) => name(x.id)).join(" & ")}</p>
+              : <p className="pirate-soft-text">{dayMultiplier(today) > 1 ? t("prizesToday", { m: dayMultiplier(today).toFixed(1) }) : say("每一格都有 10% 机会，好运属于每个人", "Every wedge has a 10% chance. Fair winds for everyone.")}</p>}
+          </div>
 
-                {phase === "landed" && caption && (
-                  <div className="py-2">
-                    <div className={`pirate-land mt-2 text-[18px] font-bold ${caption.good ? "" : "text-warn"}`}>{caption.text}</div>
-                    {caption.good && wedge && WEDGES[wedge.index].kind !== "shield" && <Burst />}
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      {left > 0 ? (
-                        <button onClick={spin} disabled={busy} className="rounded-3xl bg-ink py-4 text-[18px] font-bold text-white active:scale-[.98] disabled:opacity-50">
-                          🎡 {t("spinAgain")}
-                        </button>
-                      ) : (
-                        <button onClick={() => setPhase("idle")} className="rounded-3xl bg-ink py-4 text-[18px] font-bold text-white active:scale-[.98]">
-                          OK
-                        </button>
-                      )}
-                      <button onClick={() => setPhase("idle")} className="rounded-3xl border border-line bg-cream py-4 text-[18px] font-bold active:scale-[.98]">
-                        {t("later")}
-                      </button>
-                    </div>
-                  </div>
-                )}
+          <button className="pirate-gold-button pirate-spin-button" disabled={!canSpin} onClick={spin}>
+            <span>{resolving ? say("冒险进行中…", "ADVENTURE IN MOTION…") : phase === "pick" ? say("选择上方的目标", "CHOOSE A TARGET ABOVE") : ended ? say("本次航行已结束", "VOYAGE COMPLETE") : left <= 0 && !loading ? say("等待新的转盘次数", "MORE SPINS ON THE HORIZON") : phase === "landed" ? t("spinAgain") : t("spin")}</span>
+            {!resolving && !ended && phase !== "pick" && <small>🎡 {left} · {t("spinsLeft")}</small>}
+          </button>
+          <div className="pirate-refill">{!ended && !loading && !resolving && <><span>{left <= 0 ? t("nextDayIn") : say("每日补充 +5 次", "DAILY REFILL +5 SPINS")}</span><strong>{timeLeft}</strong></>}</div>
+        </main>
 
-                {phase === "idle" && (
-                  <div className="py-2">
-                    {left > 0 ? (
-                      <>
-                        <Wheel target={0} settled preview today={today} />
-                        {dayMultiplier(today) > 1 && (
-                          <div className="mt-1 text-[13px] text-sub">{t("prizesToday", { m: dayMultiplier(today).toFixed(1) })}</div>
-                        )}
-                        <button
-                          onClick={spin}
-                          disabled={busy}
-                          className="pirate-pulse mt-3 w-full rounded-3xl bg-ink py-5 text-[24px] font-bold text-white active:scale-[.98] disabled:opacity-50"
-                        >
-                          🎡 {t("spin")}
-                        </button>
-                      </>
-                    ) : (
-                      <div>
-                        <div className="text-4xl">😴</div>
-                        <div className="mt-2 text-[17px] font-semibold">{t("noSpins")}</div>
-                        <div className="mt-3 text-[13px] uppercase tracking-wider text-sub">{t("nextDayIn")}</div>
-                        <div className="font-mono text-[44px] font-bold leading-none tabular-nums text-ink">{countdown}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Card>
-            </>
-          )
-        )}
-
-        <h2 className="mt-5 px-1 text-[18px] font-bold">🏆 {t("leaderboard")}</h2>
-        <Card className="mt-2 p-2">
-          <ul>
-            {board.map((x, i) => (
-              <li key={x.id} className={`flex items-center gap-3 rounded-2xl px-2 py-2 ${x.id === me ? "bg-shamrock-soft" : ""}`}>
-                <span className="w-5 text-center text-[15px] font-bold text-sub">{i + 1}</span>
-                <Avatar person={who(x.id)} size={36} />
-                <span className="flex-1 text-[16px] font-semibold">
-                  {name(x.id)} {x.leader && contested && "👑"}
-                </span>
-                <span className="text-[16px] font-bold">{x.gold.toLocaleString()} 🪙</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <h2 className="mt-5 px-1 text-[18px] font-bold">📣 {t("feed")}</h2>
-        <Card className="mt-2">
-          {events.length === 0 ? (
-            <p className="text-[15px] text-sub">—</p>
-          ) : (
-            <ul className="space-y-2">
-              {events.map((e) => (
-                <li key={e.id} className="flex gap-2 text-[15px]">
-                  <span className="shrink-0 text-[13px] text-sub">{e.day.slice(5).replace("-", "/")}</span>
-                  <span>{p(eventText(e, name))}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        <details className="mt-5 rounded-3xl border border-line bg-card p-4">
-          <summary className="cursor-pointer text-[18px] font-bold">📜 {t("howToPlay")}</summary>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-[15px]">
-            {RULES.map((r, i) => (
-              <li key={i}>{p(r)}</li>
-            ))}
-          </ul>
-        </details>
+        <nav className="pirate-dock" aria-label={say("游戏菜单", "Game menu")}>
+          <button className="pirate-dock-active" disabled={busy} onClick={() => openPanel(null)}><span>🎡</span>{say("转盘", "PLAY")}</button>
+          <button disabled={busy} onClick={() => { openPanel("defend"); setHelp(false); }}><Shield size={23} />{say("防御", "DEFEND")}{mine?.mirror && <i />}</button>
+          <button disabled={busy} onClick={() => openPanel("crew")}><Trophy size={23} />{say("家族", "CREW")}</button>
+          <button disabled={busy} onClick={() => openPanel("rules")}><BookOpen size={23} />{say("玩法", "RULES")}</button>
+        </nav>
       </div>
+
+      {panel && <GameDialog title={panelTitle} busy={busy} onClose={() => { setPanel(null); setOrder(null); }} closeLabel={say("关闭", "Close")}>
+        {order ? <div className="pirate-mirror-confirm">
+          <div className="pirate-mirror-art">🪞</div>
+          <p>{say("装备一面镜子，挡下并反弹下一次偷窃或炸弹，用后消失。", "Equip one mirror to block and reflect the next steal or bomb. It is used up after one attack.")}</p>
+          <div className="pirate-cost"><span>{order.kind === "trade" ? say("消耗", "YOU SPEND") : say("价格", "PRICE")}</span><strong>{order.kind === "trade" ? "2 🛡️" : order.price.toLocaleString() + " 🪙"}</strong></div>
+          <div className="pirate-cost"><span>{order.kind === "trade" ? say("盾牌余额", "SHIELDS AFTER TRADE") : say("金币余额", "GOLD AFTER PURCHASE")}</span><strong>{order.kind === "trade" ? order.shields + " → " + Math.max(0, order.shields - 2) : order.gold.toLocaleString() + " → " + Math.max(0, order.gold - order.price).toLocaleString()}</strong></div>
+          <p className="pirate-soft-text">{order.kind === "trade" ? say("这次兑换只有你能在动态中看到。", "This trade is private in the activity feed.") : say("金币购买会出现在家族动态中。", "This gold purchase appears in the family activity feed.")}</p>
+          {notice && <p role="status" className="pirate-notice">{notice}</p>}
+          <button className="pirate-gold-button" disabled={busy || !game.online || !game.mine || game.mine.mirror || ended || (order.kind === "trade" ? game.mine.shields < 2 : game.mine.gold < price)} onClick={confirmMirror}>{busy ? say("正在确认…", "Confirming…") : order.kind === "trade" ? say("确认消耗 2 块盾牌", "Trade 2 shields") : say("确认购买", "Buy for") + " " + order.price.toLocaleString() + " 🪙"}</button>
+          <button className="pirate-secondary-button" disabled={busy} onClick={() => { setOrder(null); setNotice(""); }}>{say("取消", "Cancel")}</button>
+        </div> : panel === "defend" ? <div>
+          <div className="pirate-defense-inventory"><div><span>🛡️</span><strong>{game.mine?.shields ?? 0} / {MAX_SHIELDS}</strong><small>{say("盾牌", "SHIELDS")}</small></div><div><span>🪞</span><strong>{game.mine?.mirror ? "1 / 1" : "0 / 1"}</strong><small>{say("镜子", "MIRROR")}</small></div></div>
+          <div className="pirate-mirror-heading"><h3>{say("反弹镜", "The comeback mirror")}</h3><button className="pirate-icon-button" aria-expanded={help} aria-controls="pirate-mirror-help" aria-label={say("镜子有什么用？", "How does a mirror work?")} onClick={() => setHelp(!help)}><HelpCircle size={23} /></button></div>
+          <p className="pirate-soft-text">{say("让下一位攻击你的人，自食其果。", "A little protection. A very satisfying comeback.")}</p>
+          {help && <div id="pirate-mirror-help" className="pirate-help">
+            <p>{say("🪞 镜子优先于盾牌，自动挡下并反弹下一次偷窃或炸弹，然后消失。最多持有一面。", "🪞 A mirror activates before your shields. It blocks and reflects the next steal or bomb, then disappears. You can hold one.")}</p>
+            <p>{say("🏴‍☠️ 被偷时：攻击者反而把同样数量的金币付给你。💣 被炸时：攻击者自己损失金币。反弹金额不超过攻击者的余额。", "🏴‍☠️ Steal: the attacker pays you instead. 💣 Bomb: the attacker loses their own gold. Reflected damage is capped at the attacker's balance.")}</p>
+            <p>{say("🛡️ 每块盾牌只挡一次攻击，不会反弹。镜子使用后，你的盾牌仍然保留。", "🛡️ Each shield blocks one attack without reflecting it. A mirror leaves your shields untouched.")}</p>
+            <p>{say("兑换消耗两块盾牌；金币价格为余额的 20%（向下取整到十位），最低 200。金币购买为公开动态，盾牌兑换为私密动态。", "Trade costs two shields. Gold price is 20% of your balance, rounded down to tens, minimum 200. Gold purchases are public in the feed; shield trades are private.")}</p>
+          </div>}
+          {notice && <p role="status" className="pirate-notice">{notice}</p>}
+          {game.mine?.mirror ? <div className="pirate-equipped">✦ {say("镜子已装备，下一次攻击会被反弹", "Mirror armed. The next attack bounces back.")}</div> : <>
+            <div className="pirate-shop-option"><div><strong>2 🛡️ → 1 🪞</strong><small>{say("秘密兑换", "PRIVATE TRADE")}</small></div><button disabled={busy || loading || !game.online || ended || (game.mine?.shields ?? 0) < 2} onClick={() => quote("trade")}>{say("兑换", "Trade")}</button></div>
+            <div className="pirate-shop-option"><div><strong>{price.toLocaleString()} 🪙 → 1 🪞</strong><small>{say("金币购买 · 家族可见", "GOLD PURCHASE · PUBLIC")}</small></div><button disabled={busy || loading || !game.online || ended || (game.mine?.gold ?? 0) < price} onClick={() => quote("buy")}>{say("购买", "Buy")}</button></div>
+            <p className="pirate-soft-text pirate-shop-hint">{say("点击兑换或购买后，先确认再扣除。", "You'll review and confirm the cost before spending.")}</p>
+          </>}
+        </div> : panel === "crew" ? <div>
+          <div className="pirate-ranking">{board.map((x, i) => <div key={x.id} className={x.id === me ? "is-me" : ""}><span>{i === 0 && contested ? "👑" : i + 1}</span><Avatar person={who(x.id)} size={37} /><strong>{name(x.id)}{x.id === me && <small>{say("你", "YOU")}</small>}</strong><b>{x.gold.toLocaleString()} <small>🪙</small></b></div>)}</div>
+          <h3 className="pirate-feed-title">{t("feed")}</h3><ul className="pirate-feed">{events.length ? events.map((e) => <li key={e.id}><time>{e.day.slice(5).replace("-", "/")}</time><span>{p(eventText(e, name))}</span></li>) : <li>{say("海湾还很安静，转一次开启冒险。", "Quiet seas. Take a spin to start the adventure.")}</li>}</ul>
+        </div> : <ul className="pirate-rules">{RULES.map((rule, i) => <li key={i}><span>{String(i + 1).padStart(2, "0")}</span><p>{p(rule)}</p></li>)}</ul>}
+      </GameDialog>}
     </div>
   );
 }
 
-// Lucky-draw wheel: ten equal wedges; spins 5 turns and eases to a stop with the target under the pointer.
-function Wheel({ target, settled = false, preview = false, today }: { target: number; settled?: boolean; preview?: boolean; today: string }) {
-  const { p } = useApp();
-  const SIZE = preview ? 200 : 280;
-  const R = SIZE / 2;
-  const step = 360 / WEDGES.length;
-  const mid = target * step + step / 2;
-  const finalDeg = preview ? 0 : 5 * 360 + (360 - mid);
-  const [deg, setDeg] = useState(settled || preview ? finalDeg : 0);
-  useEffect(() => {
-    if (settled || preview) return;
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return setDeg(finalDeg);
-    const id = requestAnimationFrame(() => requestAnimationFrame(() => setDeg(finalDeg)));
-    return () => cancelAnimationFrame(id);
-  }, [settled, preview, finalDeg]);
-  const pt = (a: number, r: number) => [R + r * Math.sin((a * Math.PI) / 180), R - r * Math.cos((a * Math.PI) / 180)];
-  return (
-    <div className="relative mx-auto" style={{ width: SIZE, height: SIZE }}>
-      <svg
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
-        width={SIZE}
-        height={SIZE}
-        style={{
-          transform: `rotate(${deg}deg)`,
-          transition: settled || preview || deg === 0 ? "none" : `transform ${WHEEL_MS}ms cubic-bezier(0.12, 0.75, 0.15, 1)`,
-          willChange: "transform",
-        }}
-      >
-        {WEDGES.map((w, i) => {
-          const start = i * step, end = start + step, m = start + step / 2;
-          const [x1, y1] = pt(start, R - 4);
-          const [x2, y2] = pt(end, R - 4);
-          const [ex, ey] = pt(m, R * 0.56);
-          const [lx, ly] = pt(m, R * 0.82);
-          return (
-            <g key={i}>
-              <path d={`M${R} ${R} L${x1} ${y1} A${R - 4} ${R - 4} 0 0 1 ${x2} ${y2} Z`} fill={w.color} stroke="#f5f2ea" strokeWidth="3" />
-              <text x={ex} y={ey} textAnchor="middle" dominantBaseline="central" fontSize={preview ? 18 : 26} transform={`rotate(${m} ${ex} ${ey})`}>
-                {w.emoji}
-              </text>
-              <text
-                x={lx}
-                y={ly}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={preview ? 9 : 12}
-                fontWeight="700"
-                fill="#fff"
-                transform={`rotate(${m} ${lx} ${ly})`}
-              >
-                {w.kind === "win" ? coinValue(w.amount ?? 0, today).toLocaleString() : p(w.label)}
-              </text>
-            </g>
-          );
-        })}
-        <circle cx={R} cy={R} r={R - 2} fill="none" stroke="#c7782b" strokeWidth="6" />
-        <circle cx={R} cy={R} r={preview ? 16 : 22} fill="#f5f2ea" stroke="#c7782b" strokeWidth="4" />
-        <text x={R} y={R} textAnchor="middle" dominantBaseline="central" fontSize={preview ? 14 : 20}>
-          ☘️
-        </text>
-      </svg>
-      {!preview && <div className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 text-[34px] leading-none drop-shadow">🔻</div>}
-    </div>
-  );
-}
-
-function Burst() {
-  return (
-    <span className="pointer-events-none relative block h-0">
-      {[-40, -15, 10, 35].map((dx, i) => (
-        <span key={i} className="crew-burst absolute left-1/2 -top-16 text-2xl" style={{ ["--dx" as string]: `${dx}px`, ["--dy" as string]: `${-30 - i * 8}px` }}>
-          🪙
-        </span>
-      ))}
-    </span>
-  );
+function GameDialog({ title, busy, onClose, closeLabel, children }: { title: string; busy: boolean; onClose: () => void; closeLabel: string; children: ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => { if (dialog?.open) dialog.close(); }; }, []);
+  return <dialog ref={ref} className="pirate-dialog" aria-labelledby="pirate-dialog-title" onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }}>
+    <div className="pirate-dialog-header"><h2 id="pirate-dialog-title">{title}</h2><button className="pirate-icon-button" aria-label={closeLabel} disabled={busy} onClick={onClose}><X size={21} /></button></div>
+    <div className="pirate-dialog-content">{children}</div>
+  </dialog>;
 }
 
 const RULES = [
@@ -451,6 +345,7 @@ const RULES = [
   { zh: "转盘 10 格，每格机会一样：💰 50 / 100 / 150 / 200 / 300 / 500 直接进口袋，而且奖金每天变大（第 14 天 ×3）。", en: "Ten equal wedges: 💰 50 / 100 / 150 / 200 / 300 / 500 go straight into your gold, and prizes grow every day (×3 on Day 14)." },
   { zh: "🏴‍☠️ 偷：随机偷一个人 15% 的金币（最后一名偷不到）。💣 炸：你选一个人，他损失 20%（炸掉，不归你）；每人每天只能被炸一次。", en: "🏴‍☠️ Steal takes 15% from a random person (never the one in last place). 💣 Boom: you pick someone, they lose 20% (destroyed, not yours); each person can only be boomed once a day." },
   { zh: `🛡️ 盾牌：挡一次攻击，最多 ${MAX_SHIELDS} 块，别人看不到你有几块。🎰 多 3 次转盘。`, en: `🛡️ Shield blocks one attack, up to ${MAX_SHIELDS}, hidden from others. 🎰 gives +3 spins.` },
-  { zh: "🪞 镜子（最多一面）：挡下攻击，并把同样的伤害反弹给攻击者。两块盾牌悄悄换一面，或花 20% 金币买一面（大家都会看到）。", en: "🪞 Mirror (max one): blocks the attack and sends the same hit back. Trade two shields for one quietly, or buy one for 20% of your gold (everyone sees that)." },
+  { zh: "🪞 镜子（最多一面）：优先于盾牌，挡下下一次攻击并反弹同样伤害，用后消失。两块盾牌悄悄换一面，或花 20% 金币买一面（大家都会看到）。", en: "🪞 Mirror (max one): activates before shields, blocks the next attack and sends the same hit back, then is used up. Trade two shields for one quietly, or buy one for 20% of your gold, minimum 200 (everyone sees that)." },
   { zh: `10月25日第 1 天大家重新从 1,000 开始，第 ${DAYS} 天（11月7日）结束，最多的人是海盗王 👑`, en: `Day 1 (25 Oct) everyone restarts at 1,000; after Day ${DAYS} (7 Nov) the richest is Pirate King 👑` },
 ];
+
