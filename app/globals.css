@@ -54,7 +54,10 @@ body {
 }
 
 /* Crew strip (components/Crew.tsx): stick figures wandering on the Today tab. */
+.crew-playground { isolation: isolate; }
+.crew-gesture-hint { position: absolute; inset: 0 0 auto; text-align: center; color: var(--color-sub, #718077); font-size: 10px; line-height: 1.5; pointer-events: none; }
 .crew-fig {
+  cursor: grab;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -105,6 +108,17 @@ body {
 .crew-waving .arm-r { animation: crew-wave 0.5s ease-in-out infinite alternate; } /* home day: everyone keeps waving */
 
 .crew-lifted { scale: 1.12; filter: drop-shadow(0 6px 6px #17322d40); z-index: 10; }
+.crew-lifted { cursor: grabbing; }
+.crew-airborne { z-index: 9; filter: drop-shadow(0 4px 4px #17322d25); }
+.crew-dangle .leg-l, .crew-airborne .leg-l { animation: crew-swing .28s ease-in-out infinite alternate; }
+.crew-dangle .leg-r, .crew-airborne .leg-r { animation: crew-swing .28s ease-in-out infinite alternate-reverse; }
+.crew-dangle .arm-l, .crew-airborne .arm-l { transform: rotate(35deg); }
+.crew-dangle .arm-r, .crew-airborne .arm-r { transform: rotate(-35deg); }
+@keyframes crew-high-five {
+  0%, 100% { transform: rotate(0); }
+  30%, 65% { transform: rotate(-80deg); }
+}
+.crew-high-five .arm-r { animation: crew-high-five 1.2s ease-in-out; }
 
 @keyframes crew-burst {
   0% { transform: translate(0, 0) scale(0.4); opacity: 1; }
@@ -120,7 +134,10 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .crew-walk .leg-l, .crew-walk .leg-r, .crew-walk .arm-l, .crew-walk .arm-r,
-  .crew-dangle, .crew-jump { animation: none; }
+  .crew-dangle, .crew-jump, .crew-wobble, .crew-wave .arm-r, .crew-waving .arm-r,
+  .crew-high-five .arm-r, .crew-dangle .leg-l, .crew-dangle .leg-r,
+  .crew-airborne .leg-l, .crew-airborne .leg-r, .crew-bubble-in, .crew-burst { animation: none; }
+  .crew-high-five .arm-r { transform: rotate(-80deg); }
 }
 
 /* Pirate game (components/PirateSheet.tsx) */
@@ -143,3 +160,4 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .pirate-roll, .pirate-pulse { animation: none; }
 }
+

@@ -126,3 +126,41 @@ export function bubbleLeft(x: number, width: number, half = 80) {
   if (width <= half * 2) return width / 2;
   return Math.min(width - half, Math.max(half, x));
 }
+
+export type Toss = { x: number; y: number; vx: number; vy: number; angle: number; spin: number };
+export type DragSample = { x: number; y: number; at: number };
+
+// Only the last part of the gesture counts. Holding still before releasing is a drop.
+export function releaseVelocity(samples: DragSample[], now: number) {
+  const recent = samples.filter((s) => now - s.at <= 100);
+  const first = recent[0], last = recent.at(-1);
+  if (!first || !last || now - last.at > 80 || last.at - first.at < 8) return { vx: 0, vy: 0 };
+  const seconds = (last.at - first.at) / 1000;
+  const limit = (n: number) => Math.max(-850, Math.min(850, n));
+  return { vx: limit((last.x - first.x) / seconds), vy: limit((last.y - first.y) / seconds) };
+}
+
+// Small, bounded steps keep bounces stable after a slow frame or a hidden tab.
+// y is the height above the ground, so positive vy travels upwards.
+export function stepToss(f: Toss, dt: number, maxX: number, maxY: number) {
+  const t = Math.max(0, Math.min(dt, 0.032));
+  let { vx, vy, spin } = f;
+  let x = f.x + vx * t;
+  let y = f.y + vy * t - 600 * t * t;
+  vy -= 1200 * t;
+  if (x < 0) { x = 0; vx = Math.abs(vx) * 0.62; spin *= -0.65; }
+  if (x > maxX) { x = Math.max(0, maxX); vx = -Math.abs(vx) * 0.62; spin *= -0.65; }
+  if (y > maxY) { y = Math.max(0, maxY); vy = -Math.abs(vy) * 0.4; }
+  let landed = false;
+  let bounced = false;
+  if (y <= 0 && vy < 0) {
+    y = 0;
+    bounced = true;
+    landed = Math.abs(vy) < 135;
+    vy = landed ? 0 : Math.abs(vy) * 0.36;
+    vx *= 0.6;
+    spin *= 0.5;
+  }
+  return { x, y, vx, vy, spin, angle: f.angle + spin * t, landed, bounced };
+}
+
