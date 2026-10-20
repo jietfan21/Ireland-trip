@@ -28,7 +28,7 @@
 .pirate-defense-summary > span { display: flex; gap: 5px; font-size: 16px; }
 .pirate-defense-summary small { font-size: 9px; letter-spacing: 1px; color: #d3dbca; }
 .pirate-shield-empty { opacity: .23; filter: grayscale(1); }
-.pirate-play { display: grid; flex: 1; min-height: 0; grid-template-rows: 46px minmax(0, 1fr) 76px 60px 28px; align-items: stretch; }
+.pirate-play { display: grid; flex: 1; min-height: 0; grid-template-rows: 46px minmax(0, 1fr) max-content 60px 28px; align-items: stretch; }
 .pirate-stage-heading { text-align: center; margin: 0; align-self: center; }
 .pirate-stage-heading h2 { font-size: 23px; line-height: 1.25; font-weight: 900; letter-spacing: -.8px; color: #fff0c7; text-shadow: 0 2px 0 #0006; }
 .pirate-stage-heading .pirate-eyebrow { margin-bottom: 4px; font-size: 8px; letter-spacing: 1.8px; }
@@ -123,7 +123,7 @@
 @keyframes pirate-bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(5px) rotate(3deg); } }
 @keyframes pirate-balance { from { color: #fff; transform: scale(1.04); } to { color: #ffe3a0; transform: scale(1); } }
 .pirate-balance-update { animation: pirate-balance .45s ease-out; }
-@media (min-height: 900px) { .pirate-play { grid-template-rows: 58px minmax(0, 1fr) 82px 64px 32px; } }
+@media (min-height: 900px) { .pirate-play { grid-template-rows: 58px minmax(0, 1fr) max-content 64px 32px; } }
 @media (max-width: 370px) { .pirate-shell { padding-left: 16px; padding-right: 16px; }.pirate-header h1 { font-size: 22px; }.pirate-dock { margin-left: -16px; margin-right: -16px; }.pirate-targets { gap: 5px; }.pirate-targets button { padding: 8px 5px; }.pirate-target-mark { display: none; }.pirate-stage-heading h2 { font-size: 24px; } }
 @media (prefers-reduced-motion: reduce) { .pirate-game *, .pirate-dialog * { animation: none !important; }.pirate-wheel-disc { transition-duration: .1s !important; } }
 
@@ -188,7 +188,7 @@
   .pirate-hud { padding-top: 6px; padding-bottom: 5px; gap: 2px; }
   .pirate-defense-summary { padding-top: 4px; }
   .pirate-defense-summary > span { font-size: 14px; }
-  .pirate-play { grid-template-rows: 36px minmax(0, 1fr) 68px 56px 24px; }
+  .pirate-play { grid-template-rows: 36px minmax(0, 1fr) max-content 56px 24px; }
   .pirate-stage-heading .pirate-eyebrow { display: none; }
   .pirate-stage-heading h2 { font-size: 22px; }
   .pirate-spin-button > span { font-size: 17px; }
@@ -201,7 +201,7 @@
 @media (max-height: 500px) {
   .pirate-game { overflow-y: auto; }
   .pirate-shell { height: auto; min-height: 100%; }
-  .pirate-play { flex: none; grid-template-rows: 36px 180px 68px 56px 24px; }
+  .pirate-play { flex: none; grid-template-rows: 36px 220px max-content 56px 24px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pirate-coin-collection, .pirate-blast-particle, .pirate-stolen-coin, .pirate-block-projectile, .pirate-reflect-trail { display: none; }

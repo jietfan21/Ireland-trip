@@ -311,7 +311,7 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
               : phase === "impact" ? <p className="pirate-soft-text">{effect?.kind === "shield" ? say("守护宝藏，准备就绪", "A little extra protection for your treasure") : effect?.kind === "spins" ? say("好运还没结束！", "Your adventure isn't over yet!") : say("宝藏争夺战！", "A clash over treasure!")}</p>
               : phase === "pick" ? <p className="pirate-soft-text">{say("炸掉 20% 金币，全家合计每人每天只能被炸一次", "Destroy 20% of their gold · one bomb per target per day across the family")}</p>
               : ended ? <p className="pirate-champion">👑 {board.filter((x) => x.leader).map((x) => name(x.id)).join(" & ")}</p>
-              : <p className="pirate-soft-text">{dayMultiplier(today) > 1 ? t("prizesToday", { m: dayMultiplier(today).toFixed(1) }) : say("每一格都有 10% 机会，好运属于每个人", "Every wedge has a 10% chance. Fair winds for everyone.")}</p>}
+              : dayMultiplier(today) > 1 ? <p className="pirate-soft-text">{t("prizesToday", { m: dayMultiplier(today).toFixed(1) })}</p> : null}
           </div>
 
           <button className="pirate-gold-button pirate-spin-button" disabled={!canSpin} onClick={spin}>

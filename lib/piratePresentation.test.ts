@@ -7,8 +7,9 @@ test("wheel stays inside short, narrow and resized stages with room for its deco
     const size = fittedWheelSize(width, height);
     assert.ok(size + 24 <= width);
     assert.ok(size + 28 <= height);
-    assert.ok(size <= 350);
+    assert.ok(size <= 380);
   }
+  assert.equal(fittedWheelSize(420, 600), 380);
   assert.equal(fittedWheelSize(354, 125), 97);
   assert.equal(fittedWheelSize(0, 0), 0);
   assert.equal(fittedWheelSize(300, 10), 0);
