@@ -14,13 +14,13 @@ export default function PirateWheel({ rotation, duration, today, candidates, lab
 }) {
   const { p } = useApp();
   const frame = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState(0);
+  const [bounds, setBounds] = useState({ size: 0, x: 0, y: 0 });
   useLayoutEffect(() => {
     const stage = frame.current?.parentElement;
     if (!stage) return;
     const resize = () => {
       const rect = stage.getBoundingClientRect();
-      setSize(fittedWheelSize(rect.width, rect.height));
+      setBounds({ size: fittedWheelSize(rect.width, rect.height), x: rect.width / 2, y: rect.height / 2 });
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -33,7 +33,7 @@ export default function PirateWheel({ rotation, duration, today, candidates, lab
   const segments = faces ?? WEDGES;
   const step = 360 / segments.length;
   return (
-    <div ref={frame} className={`pirate-wheel-frame ${candidates ? "pirate-wheel-steal" : ""}`} role="img" aria-label={label} style={{ width: size, height: size, visibility: size > 0 ? "visible" : "hidden" }}>
+    <div ref={frame} className={`pirate-wheel-frame ${candidates ? "pirate-wheel-steal" : ""}`} role="img" aria-label={label} style={{ width: bounds.size, height: bounds.size, left: bounds.x, top: bounds.y, visibility: bounds.size > 0 ? "visible" : "hidden" }}>
       <div className="pirate-wheel-glow" />
       <div className="pirate-pointer" aria-hidden="true" />
       <div className="pirate-wheel-rim">

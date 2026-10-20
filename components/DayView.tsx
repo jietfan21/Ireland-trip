@@ -102,7 +102,7 @@ export default function DayView({ day, weather }: { day: Day; weather: Weather }
                       href={navUrl(pl.lat, pl.lng, pl.q)}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-shamrock-soft px-3 py-1 text-[14px] font-semibold text-shamrock"
+                      className="mt-1.5 inline-flex min-h-11 items-center gap-1 rounded-2xl bg-shamrock-soft px-3 py-2 text-[14px] font-semibold text-shamrock"
                     >
                       📍 {p(pl)} →
                     </a>
@@ -112,7 +112,7 @@ export default function DayView({ day, weather }: { day: Day; weather: Weather }
                       href={s.link.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-shamrock-soft px-3 py-1 text-[14px] font-semibold text-shamrock"
+                      className="mt-1.5 inline-flex min-h-11 items-center gap-1 rounded-2xl bg-shamrock-soft px-3 py-2 text-[14px] font-semibold text-shamrock"
                     >
                       📍 {p(s.link.label)} →
                     </a>
@@ -140,3 +140,4 @@ export default function DayView({ day, weather }: { day: Day; weather: Weather }
     </div>
   );
 }
+
