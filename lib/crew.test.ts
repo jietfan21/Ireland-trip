@@ -1,7 +1,7 @@
 // Run: node --test lib/crew.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bubbleLeft, castForDay, crew, pickLine, stepWalk } from "./crew.ts";
+import { bubbleLeft, castForDay, crew, pickLine, releaseVelocity, stepToss, stepWalk } from "./crew.ts";
 import { people } from "./trip.ts";
 
 const ids = (n: number) => castForDay(n).map((c) => c.id).sort();
@@ -56,3 +56,32 @@ test("bubbleLeft keeps a 160px bubble inside the strip", () => {
   assert.equal(bubbleLeft(170, 343), 170);
   assert.equal(bubbleLeft(5, 100), 50);
 });
+
+test("flick uses recent movement, caps fast gestures and forgets momentum after a hold", () => {
+  const samples = [{ x: 0, y: 0, at: 0 }, { x: 20, y: 10, at: 100 }, { x: 40, y: 30, at: 140 }];
+  assert.deepEqual(releaseVelocity(samples, 150), { vx: 500, vy: 500 });
+  assert.deepEqual(releaseVelocity(samples, 240), { vx: 0, vy: 0 });
+  assert.deepEqual(releaseVelocity([{ x: 0, y: 0, at: 0 }, { x: 200, y: -100, at: 10 }], 10), { vx: 850, vy: -850 });
+  assert.deepEqual(releaseVelocity([], 50), { vx: 0, vy: 0 });
+});
+
+test("throws bounce off both walls and ceiling and eventually settle on the ground", () => {
+  const initial = { x: 150, y: 50, vx: 800, vy: 700, angle: 0, spin: 600 };
+  const right = stepToss({ ...initial, x: 299 }, 0.032, 300, 100);
+  assert.equal(right.x, 300); assert.ok(right.vx < 0);
+  const left = stepToss({ ...initial, x: 1, vx: -800 }, 0.032, 300, 100);
+  assert.equal(left.x, 0); assert.ok(left.vx > 0);
+  const ceiling = stepToss({ ...initial, y: 99 }, 0.032, 300, 100);
+  assert.equal(ceiling.y, 100); assert.ok(ceiling.vy < 0);
+  for (const vx of [-850, 0, 850]) {
+    let f = { ...initial, vx };
+    let landed = false, bounced = false;
+    for (let i = 0; i < 500 && !landed; i++) {
+      const next = stepToss(f, i === 1 ? 5 : 1 / 60, 300, 100);
+      assert.ok(next.x >= 0 && next.x <= 300 && next.y >= 0 && next.y <= 100);
+      bounced ||= next.bounced; landed = next.landed; f = next;
+    }
+    assert.ok(bounced && landed); assert.equal(f.y, 0); assert.equal(f.vy, 0);
+  }
+});
+
