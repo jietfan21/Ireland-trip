@@ -2,8 +2,9 @@
 
 import { BedDouble, Car, Phone, Plane, TriangleAlert } from "lucide-react";
 import { car, emergency, flights, people, stays, stayNavUrl } from "@/lib/trip";
-import { daysBetween, fmtDate, Card, CallButton, NavButton, useApp } from "./common";
+import { daysBetween, fmtDate, Avatar, Card, CallButton, NavButton, useApp } from "./common";
 import { useViewState } from "./ViewMemory";
+import { orderedFlights } from "@/lib/flights";
 
 type Seg = "stays" | "flights" | "car" | "sos";
 
@@ -95,42 +96,36 @@ function Stays() {
 }
 
 function Flights() {
-  const { p, t } = useApp();
-  const groups = ["kl4", "jiet", "iceland", "local"] as const;
+  const { p } = useApp();
   return (
     <div className="space-y-3">
-      {groups.map((g) => {
-        const f = flights[g];
-        return (
-          <Card key={g}>
-            <div className="text-[18px] font-bold">{p(f.title)}</div>
-            {f.legs.length > 0 && (
-              <ul className="mt-2 divide-y divide-line">
-                {f.legs.map((l) => (
-                  <li key={l.code} className="py-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="rounded-lg bg-ink px-2 py-0.5 text-[14px] font-bold text-white">{l.code}</span>
-                      <span className="text-[15px] font-semibold">
-                        {l.from} → {l.to}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex justify-between text-[15px] text-sub">
-                      <span>🛫 {l.dep}</span>
-                      <span>🛬 {l.arr}</span>
-                    </div>
-                    {l.note && <div className="mt-1 text-[14px] font-semibold text-warn">⚠️ {p(l.note)}</div>}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {f.note && (
-              <p className={`mt-2 text-[15px] ${f.legs.length ? "text-sub" : ""}`}>
-                {p(f.note)}
-              </p>
-            )}
-          </Card>
-        );
-      })}
+      {orderedFlights().map((flight) => (
+        <Card key={flight.code} className="flight-card">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 py-1" aria-label={flight.passengers.map(p).join(" · ")}>
+              {flight.passengers.map((person) => <Avatar key={person.id} person={person} size={36} />)}
+            </div>
+            <span className="shrink-0 rounded-lg bg-ink px-2.5 py-1 text-[14px] font-bold text-white">{flight.code}</span>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-2 text-[20px] font-bold">
+            <span>{flight.from}</span><Plane size={20} className="shrink-0 text-shamrock" aria-hidden="true" /><span>{flight.to}</span>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-3 text-[15px] tabular-nums text-sub">
+            <span>🛫 {flight.dep}</span><span className="text-right">🛬 {flight.arr}</span>
+          </div>
+          {flight.note && <div className="mt-2 text-[14px] font-semibold text-warn">⚠️ {p(flight.note)}</div>}
+          {flight.showGroup && <div className="mt-3 border-t border-line pt-3">
+            <p className="text-[14px] font-semibold text-sub">{p(flight.title)}</p>
+            {flight.groupNote && <p className="mt-1 text-[14px] text-sub">{p(flight.groupNote)}</p>}
+          </div>}
+        </Card>
+      ))}
+      <Card>
+        <div className="flex items-center gap-3">
+          <Avatar person={people.find((person) => person.id === "rong")!} size={36} />
+          <div><p className="text-[16px] font-bold">{p(flights.local.title)}</p>{flights.local.note && <p className="text-[15px] text-sub">{p(flights.local.note)}</p>}</div>
+        </div>
+      </Card>
     </div>
   );
 }

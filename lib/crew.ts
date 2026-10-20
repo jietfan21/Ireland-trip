@@ -1,11 +1,10 @@
-// The stick-figure crew on the Today tab: who's around on each day, their lines, and heights.
+// The full stick-figure family on the Today tab: their lines and heights.
 // Type-only import from ./trip so `node --test lib/crew.test.ts` runs without a bundler.
 import type { L } from "./trip";
 
 export type CrewMember = {
   id: string; // matches people[].id
   height: number; // cm; the stick body scales by height / 180
-  arrives: number; // first trip day they're with the group (everyone shows on day 0 and from day 13)
   lines: L[]; // what they say when tapped
 };
 
@@ -13,7 +12,6 @@ export const crew: CrewMember[] = [
   {
     id: "dad",
     height: 180,
-    arrives: 1,
     lines: [
       { zh: "靠左！靠左！", en: "Keep LEFT! Keep left!" },
       { zh: "信用卡在我这里，放心", en: "I've got the credit card, relax" },
@@ -25,7 +23,6 @@ export const crew: CrewMember[] = [
   {
     id: "mom",
     height: 160,
-    arrives: 1,
     lines: [
       { zh: "外套带了吗？", en: "Did you bring your jacket?" },
       { zh: "吃饱了吗？要不要买点面包？", en: "Have you eaten? Shall we buy some bread?" },
@@ -37,7 +34,6 @@ export const crew: CrewMember[] = [
   {
     id: "rong",
     height: 180,
-    arrives: 1,
     lines: [
       { zh: "欢迎来我的爱尔兰！", en: "Welcome to my Ireland!" },
       { zh: "邓多克没什么好看的，但很温馨", en: "Not much to see in Dundalk, but it's cosy" },
@@ -49,7 +45,6 @@ export const crew: CrewMember[] = [
   {
     id: "yao",
     height: 180,
-    arrives: 1,
     lines: [
       { zh: "什么时候吃饭？", en: "When's lunch?" },
       { zh: "这个要打卡", en: "This one's going on the feed" },
@@ -61,7 +56,6 @@ export const crew: CrewMember[] = [
   {
     id: "jiet",
     height: 170,
-    arrives: 1,
     lines: [
       { zh: "我做的 App，好用吗？", en: "I built this app — any good?" },
       { zh: "珀斯飞过来真远", en: "Perth is a long way away" },
@@ -73,7 +67,6 @@ export const crew: CrewMember[] = [
   {
     id: "ying",
     height: 160,
-    arrives: 2,
     lines: [
       { zh: "我们从冰岛飞来的！", en: "We flew in from Iceland!" },
       { zh: "冰岛比这里冷多了", en: "Iceland was way colder than this" },
@@ -85,7 +78,6 @@ export const crew: CrewMember[] = [
   {
     id: "hui",
     height: 175,
-    arrives: 2,
     lines: [
       { zh: "我可以开车，交给我", en: "I can drive, leave it to me" },
       { zh: "悬崖边别站太近！", en: "Don't stand too close to the cliff edge!" },
@@ -95,14 +87,6 @@ export const crew: CrewMember[] = [
     ],
   },
 ];
-
-export type Cast = { id: string; waving: boolean };
-
-// Who's in the strip on trip day n (0 = travel day, 14 = home), per the design doc's table.
-export function castForDay(n: number): Cast[] {
-  if (n === 0 || n >= 13) return crew.map((m) => ({ id: m.id, waving: n >= 14 }));
-  return crew.filter((m) => m.arrives <= n).map((m) => ({ id: m.id, waving: false }));
-}
 
 // Random index in [0, count) that isn't `last` (so a tap never repeats the previous line).
 export function pickLine(count: number, last: number, rnd: () => number = Math.random): number {

@@ -16,7 +16,7 @@ function todayIndex(today: string) {
 }
 
 export default function TodayView({ jumpTo }: { jumpTo?: number }) {
-  const { t, p, person, go } = useApp();
+  const { t, go } = useApp();
   const today = irelandToday();
   const [idx, setIdx] = useViewState("today.day", () => jumpTo ?? todayIndex(today));
 
@@ -34,8 +34,7 @@ export default function TodayView({ jumpTo }: { jumpTo?: number }) {
 
   return (
     <div className="space-y-4">
-      {person && <p className="text-[17px] text-sub">{t("hi", { name: p(person) })} 👋</p>}
-      <Crew day={day} />
+      <Crew />
 
       {before > 0 && (
         <button

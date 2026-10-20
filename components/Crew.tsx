@@ -1,17 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { people, type Day, type Person } from "@/lib/trip";
-import { bubbleLeft, castForDay, crew, pickLine, releaseVelocity, stepToss, stepWalk, type DragSample, type Toss } from "@/lib/crew";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { people, type Person } from "@/lib/trip";
+import { bubbleLeft, crew, pickLine, releaseVelocity, stepToss, stepWalk, type DragSample, type Toss } from "@/lib/crew";
 import { usePirateLeaders } from "@/lib/pirateStore";
 import { useApp } from "./common";
 
 // Sizes (px). A 180 cm person is the full-size body; shorter people get a shorter body, same head.
 const STRIP_H = 220;
 const GROUND = 18; // ground line from the strip bottom
-const FIG_W = 40;
+const FIG_W = 44;
 const HEAD = 36;
-const BODY_H = 52; // body SVG height at scale 1
+const BODY_H = 62; // body SVG height at scale 1
 const HEAD_OVERLAP = 6;
 const TAP_SLOP = 8;
 const HIGH_FIVE = 40;
@@ -21,7 +21,7 @@ const JUMP_MS = 500;
 const BURST_MS = 700;
 
 type Mode = "walk" | "stand" | "drag" | "toss";
-type Fig = Toss & { dir: 1 | -1; mode: Mode; target: number; until: number; speed: number; placed: boolean; thrown: boolean };
+type Fig = Toss & { dir: 1 | -1; mode: Mode; target: number; until: number; speed: number; placed: boolean; pace: number; thrown: boolean };
 type Drag = { id: string; pointerId: number; x0: number; y0: number; startX: number; startY: number; moved: boolean; samples: DragSample[]; hold: ReturnType<typeof setTimeout> };
 type Bubble = { key: number; id: string; x: number; y: number; text: string };
 type Spark = { key: number; x: number; y: number; dx: number; dy: number };
@@ -32,7 +32,7 @@ const scaleOf = (id: string) => byId[id].height / 180;
 const figH = (id: string) => HEAD - HEAD_OVERLAP + BODY_H * scaleOf(id);
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
-export default function Crew({ day }: { day: Day }) {
+export default function Crew() {
   const { p } = useApp();
   const strip = useRef<HTMLDivElement>(null);
   const widthRef = useRef(0);
@@ -45,7 +45,9 @@ export default function Crew({ day }: { day: Day }) {
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [sparks, setSparks] = useState<Spark[]>([]);
 
-  const cast = useMemo(() => castForDay(day.n), [day.n]);
+  const cast = crew;
+  const localize = useRef(p);
+  localize.current = p;
   const leaders = usePirateLeaders(); // 👑 for whoever leads the pirate game
   const ids = cast.map((c) => c.id);
 
@@ -62,10 +64,10 @@ export default function Crew({ day }: { day: Day }) {
   const clamp = (x: number) => Math.min(maxX(), Math.max(0, x));
   const haptic = () => { if (!reduced.current) navigator.vibrate?.(8); };
 
-  // Figures keep their spot across day changes; newcomers get a random one once the strip has a width.
+  // The whole family stays in this playground, independent of the itinerary day.
   for (const id of ids) {
     if (!figs.current.has(id)) {
-      figs.current.set(id, { x: 0, y: 0, vx: 0, vy: 0, angle: 0, spin: 0, thrown: false, dir: 1, mode: "stand", target: 0, until: performance.now() + rand(500, 2000), speed: rand(18, 30), placed: false });
+      figs.current.set(id, { x: 0, y: 0, vx: 0, vy: 0, angle: 0, spin: 0, thrown: false, dir: 1, mode: "stand", target: 0, until: performance.now() + rand(500, 2000), speed: rand(18, 30), placed: false, pace: 0 });
     }
   }
   const apply = (id: string) => {
@@ -124,7 +126,7 @@ export default function Crew({ day }: { day: Day }) {
     ro.observe(el);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [day.n]);
+  }, []);
 
   // The one animation loop. Pauses while the page is hidden.
   useEffect(() => {
@@ -141,7 +143,10 @@ export default function Crew({ day }: { day: Day }) {
           Object.assign(f, flight);
           if (flight.landed) land(id, true);
         } else if (f.mode === "walk") {
-          const r = stepWalk(f, dt, maxX());
+          const distance = Math.abs(clamp(f.target) - f.x);
+          const desiredPace = Math.min(f.speed, Math.max(7, distance * 1.5));
+          f.pace += (desiredPace - f.pace) * Math.min(1, dt * 4);
+          const r = stepWalk({ ...f, speed: f.pace }, dt, maxX());
           f.x = r.x;
           f.dir = r.dir;
           if (r.arrived) {
@@ -152,6 +157,7 @@ export default function Crew({ day }: { day: Day }) {
           }
         } else if (f.mode === "stand" && now >= f.until) {
           f.target = pickTarget(id);
+          f.pace = 0;
           f.mode = "walk";
         }
         f.x = clamp(f.x);
@@ -175,10 +181,10 @@ export default function Crew({ day }: { day: Day }) {
       document.removeEventListener("visibilitychange", onVis);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [day.n]);
+  }, []);
 
   useEffect(() => {
-    // A day change or interrupted gesture must never leave a figure held in mid-air.
+    // Start grounded; interruptions must never leave a figure held in mid-air.
     const d = drag.current;
     drag.current = null;
     if (d) {
@@ -206,7 +212,7 @@ export default function Crew({ day }: { day: Day }) {
       timers.current.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [day.n]);
+  }, []);
 
   const say = (id: string, text: string, ms: number) => {
     const f = figs.current.get(id)!;
@@ -264,10 +270,10 @@ export default function Crew({ day }: { day: Day }) {
         apply(who);
         flash(who, "crew-high-five", 1200);
       }
-      say(id, p({ zh: "击掌！✋", en: "High five! ✋" }), 1200);
+      say(id, localize.current({ zh: "击掌！✋", en: "High five! ✋" }), 1200);
       haptic();
     } else if (react && f.thrown) {
-      say(id, p(Math.random() < 0.5 ? { zh: "再来一次！😆", en: "Again! Again! 😆" } : { zh: "我没事！😵‍💫", en: "I'm okay! 😵‍💫" }), 1600);
+      say(id, localize.current(Math.random() < 0.5 ? { zh: "再来一次！😆", en: "Again! Again! 😆" } : { zh: "我没事！😵‍💫", en: "I'm okay! 😵‍💫" }), 1600);
     }
     f.thrown = false;
   };
@@ -342,13 +348,11 @@ export default function Crew({ day }: { day: Day }) {
 
   return (
     <div ref={strip} className="crew-playground relative w-full overflow-hidden" style={{ height: STRIP_H }} data-crew>
-      <p className="crew-gesture-hint">{p({ zh: "轻点聊天 · 按住抛起来 · 放在一起击掌", en: "Tap to chat · Hold & toss · Bring together to high-five" })}</p>
       <div className="absolute inset-x-0 h-0.5 rounded bg-line" style={{ bottom: GROUND }} />
       {cast.map((c) => (
         <Figure
           key={c.id}
           id={c.id}
-          waving={c.waving}
           crown={leaders.includes(c.id)}
           label={p(person(c.id))}
           nodeRef={(n) => {
@@ -389,7 +393,6 @@ export default function Crew({ day }: { day: Day }) {
 
 function Figure({
   id,
-  waving,
   crown,
   label,
   nodeRef,
@@ -400,7 +403,6 @@ function Figure({
   onTap,
 }: {
   id: string;
-  waving: boolean;
   crown: boolean;
   label: string;
   nodeRef: (n: HTMLButtonElement | null) => void;
@@ -419,7 +421,7 @@ function Figure({
       ref={nodeRef}
       type="button"
       aria-label={label}
-      className={`crew-fig absolute left-0 flex flex-col items-center ${waving ? "crew-waving" : ""}`}
+      className="crew-fig absolute left-0 flex flex-col items-center"
       style={{ bottom: GROUND, width: FIG_W, height: HEAD - HEAD_OVERLAP + bodyH, willChange: "transform" }}
       onPointerDown={onDown}
       onPointerMove={onMove}
@@ -434,7 +436,7 @@ function Figure({
           👑
         </span>
       )}
-      <span className="relative z-10 grid shrink-0 place-items-center rounded-full font-bold text-white" style={{ width: HEAD, height: HEAD }}>
+      <span className="crew-head relative z-10 grid shrink-0 place-items-center rounded-full font-bold text-white" style={{ width: HEAD, height: HEAD }}>
         {broken ? (
           <span className="grid h-full w-full place-items-center rounded-full text-[15px]" style={{ background: who.color }}>
             {who.zh.slice(-1)}
@@ -450,15 +452,27 @@ function Figure({
         className="pointer-events-none shrink-0"
         style={{ marginTop: -HEAD_OVERLAP }}
         stroke={who.color}
-        strokeWidth="3"
+        strokeWidth="3.2"
         strokeLinecap="round"
         fill="none"
       >
-        <line x1="20" y1="0" x2="20" y2="26" />
-        <line className="arm-l" x1="20" y1="6" x2="8" y2="22" style={{ transformOrigin: "20px 6px" }} />
-        <line className="arm-r" x1="20" y1="6" x2="32" y2="22" style={{ transformOrigin: "20px 6px" }} />
-        <line className="leg-l" x1="20" y1="26" x2="11" y2="52" style={{ transformOrigin: "20px 26px" }} />
-        <line className="leg-r" x1="20" y1="26" x2="29" y2="52" style={{ transformOrigin: "20px 26px" }} />
+        <g className="crew-skeleton" style={{ transformOrigin: "22px 60px" }}>
+          <path d="M22 0 Q20.5 15 22 29" />
+          <path d="M17 8 Q22 6 27 8" />
+          <path d="M18 29 Q22 27.5 26 29" />
+          <g className="arm-l" style={{ transformOrigin: "22px 8px" }}>
+            <path d="M22 8 L12 17" /><g className="forearm-l" style={{ transformOrigin: "12px 17px" }}><path d="M12 17 L13 26" /></g>
+          </g>
+          <g className="arm-r" style={{ transformOrigin: "22px 8px" }}>
+            <path d="M22 8 L32 17" /><g className="forearm-r" style={{ transformOrigin: "32px 17px" }}><path d="M32 17 L31 26" /></g>
+          </g>
+          <g className="leg-l" style={{ transformOrigin: "22px 29px" }}>
+            <path d="M22 29 L16 43" /><g className="shin-l" style={{ transformOrigin: "16px 43px" }}><path d="M16 43 L13 59 L8 60" /></g>
+          </g>
+          <g className="leg-r" style={{ transformOrigin: "22px 29px" }}>
+            <path d="M22 29 L27 43" /><g className="shin-r" style={{ transformOrigin: "27px 43px" }}><path d="M27 43 L30 59 L36 60" /></g>
+          </g>
+        </g>
       </svg>
     </button>
   );

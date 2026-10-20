@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node -e \"require('fs').copyFileSync('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs','public/maplibre-gl-worker.mjs')\"",
+    "predev": "node -e \"require('fs').copyFileSync('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs','public/maplibre-gl-worker.mjs')\" && node scripts/build-family-icons.mjs",
     "dev": "next dev",
-    "prebuild": "node -e \"require('fs').copyFileSync('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs','public/maplibre-gl-worker.mjs')\"",
+    "prebuild": "node -e \"require('fs').copyFileSync('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs','public/maplibre-gl-worker.mjs')\" && node scripts/build-family-icons.mjs",
     "build": "next build",
     "start": "npx serve out",
     "lint": "tsc --noEmit",
@@ -28,3 +28,4 @@
     "typescript": "^5.9.3"
   }
 }
+

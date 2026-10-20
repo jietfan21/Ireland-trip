@@ -13,6 +13,7 @@ import PirateWheel, { StealWheel } from "./PirateWheel";
 import { AnimatedGold, CoinCollection } from "./PirateCoins";
 import PirateEffects, { type PirateEffect } from "./PirateEffects";
 import PirateCrew from "./PirateCrew";
+import { tr, type Lang, type UiKey } from "@/lib/i18n";
 
 type Phase = "idle" | "spinning" | "stealing" | "pick" | "impact" | "landed";
 type Panel = "defend" | "crew" | "rules" | null;
@@ -26,7 +27,32 @@ function countdown(ms: number) {
   return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
-export default function PirateSheet({ onClose }: { onClose: () => void }) {
+function describeLanding(res: SpinResult, index: number, lang: Lang): Caption {
+  const t = (key: UiKey, vars?: Record<string, string | number>) => tr(lang, key, vars);
+  const name = (id: string) => { const person = people.find((p) => p.id === id); return person ? person[lang] : id; };
+  const w = WEDGES[index];
+  let text = "", good = true, icon = w.emoji;
+  if (!res.applied) {
+    text = res.reason === "no spins" ? t("cap_noSpins") : t("cap_noSignal");
+    good = false; icon = "📡";
+  } else if (w.kind === "win") text = t("cap_coins", { n: res.amount });
+  else if (w.kind === "spins") text = t("cap_spins");
+  else if (w.kind === "shield") text = res.amount === 100 ? t("cap_shieldFull") : t("cap_shield");
+  else {
+    const v = res.victim ? name(res.victim) : "";
+    if (res.outcome === "blocked") {
+      text = w.kind === "steal" ? t("cap_stealBlocked", { who: v }) : t("cap_boomBlocked", { who: v });
+      good = false; icon = "🛡️";
+    } else if (res.outcome === "reflected") {
+      text = w.kind === "steal" ? t("cap_stealReflected", { who: v, n: res.amount }) : t("cap_boomReflected", { who: v, n: res.amount });
+      good = false; icon = "🪞";
+    } else if (res.outcome === "hit") text = w.kind === "steal" ? t("cap_stealHit", { who: v, n: res.amount }) : t("cap_boomHit", { who: v, n: res.amount });
+    else { text = w.kind === "steal" ? t("cap_stealNone") : t("cap_boomNone"); good = false; icon = "🌊"; }
+  }
+  return { text, good, icon };
+}
+
+export default function PirateSheet({ onClose, onLang }: { onClose: () => void; onLang: () => void }) {
   const { lang, t, p, person } = useApp();
   const say = (zh: string, en: string) => lang === "zh" ? zh : en;
   const me = person?.id ?? null;
@@ -35,8 +61,9 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [panel, setPanel] = useState<Panel>(null);
   const [rotation, setRotation] = useState(0);
-  const [caption, setCaption] = useState<Caption | null>(null);
-  const [reward, setReward] = useState<{ id: number; amount: number; detail: string } | null>(null);
+  const [landing, setLanding] = useState<{ result: SpinResult; index: number } | null>(null);
+  const caption = useMemo(() => landing ? describeLanding(landing.result, landing.index, lang) : null, [landing, lang]);
+  const [reward, setReward] = useState<{ id: number; amount: number; simple: boolean } | null>(null);
   const [frozen, setFrozen] = useState<Snapshot | null>(null);
   const [busy, setBusy] = useState(false);
   const [steal, setSteal] = useState<{ candidates: string[]; victim: string } | null>(null);
@@ -120,27 +147,10 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
 
   function land(res: SpinResult, index: number) {
     const w = WEDGES[index];
-    let text = "", good = true, icon = w.emoji;
-    if (!res.applied) {
-      text = res.reason === "no spins" ? t("cap_noSpins") : t("cap_noSignal");
-      good = false; icon = "📡";
-    } else if (w.kind === "win") text = t("cap_coins", { n: res.amount });
-    else if (w.kind === "spins") text = t("cap_spins");
-    else if (w.kind === "shield") text = res.amount === 100 ? t("cap_shieldFull") : t("cap_shield");
-    else {
-      const v = res.victim ? name(res.victim) : "";
-      if (res.outcome === "blocked") {
-        text = w.kind === "steal" ? t("cap_stealBlocked", { who: v }) : t("cap_boomBlocked", { who: v });
-        good = false; icon = "🛡️";
-      } else if (res.outcome === "reflected") {
-        text = w.kind === "steal" ? t("cap_stealReflected", { who: v, n: res.amount }) : t("cap_boomReflected", { who: v, n: res.amount });
-        good = false; icon = "🪞";
-      } else if (res.outcome === "hit") text = w.kind === "steal" ? t("cap_stealHit", { who: v, n: res.amount }) : t("cap_boomHit", { who: v, n: res.amount });
-      else { text = w.kind === "steal" ? t("cap_stealNone") : t("cap_boomNone"); good = false; icon = "🌊"; }
-    }
-    setCaption({ text, good, icon });
+    const { good } = describeLanding(res, index, lang);
+    setLanding({ result: res, index });
     const earnsGold = res.applied && res.amount > 0 && (w.kind === "win" || w.kind === "shield" || (w.kind === "steal" && res.outcome === "hit"));
-    setReward(earnsGold ? { id: ++rewardSequence.current, amount: res.amount, detail: w.kind === "win" ? say("金币已入账", "ADDED TO YOUR TREASURE") : text } : null);
+    setReward(earnsGold ? { id: ++rewardSequence.current, amount: res.amount, simple: w.kind === "win" } : null);
     setFrozen(null);
     setPhase("landed");
     chime(good ? "win" : "miss");
@@ -164,7 +174,7 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
     lock.current = true; setBusy(true);
     const index = pickWedge(Math.random), w = WEDGES[index];
     const snapshot = { mine: game.mine, board: liveBoard, events: liveEvents };
-    setFrozen(snapshot); setCaption(null); setReward(null); setSteal(null); setEffect(null);
+    setFrozen(snapshot); setLanding(null); setReward(null); setSteal(null); setEffect(null);
     setRotation((previous) => nextWheelRotation(previous, index, WEDGES.length));
     setPhase("spinning"); chime("spin");
     try {
@@ -262,6 +272,7 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
         <header className="pirate-header">
           <div><div className="pirate-eyebrow">{say("爱尔兰 · 家族争霸", "IRELAND · FAMILY RIVALRY")}</div><h1>☘ {say("三叶草海湾", "Clover Cove")}</h1></div>
           <div className="pirate-header-actions">
+            <button className="pirate-icon-button pirate-language-button" onClick={onLang} aria-label={say("切换为英文", "Switch to Chinese")}>{lang === "zh" ? "EN" : "中文"}</button>
             <button className="pirate-icon-button" aria-label={sound ? say("关闭音效", "Mute sound") : say("开启音效", "Enable sound")} aria-pressed={sound} onClick={() => { setSound(!sound); writeLocal("ie.pirate.sound", !sound); }}>{sound ? <Volume2 size={19} /> : <VolumeX size={19} />}</button>
             <button className="pirate-icon-button" onClick={onClose} disabled={busy} aria-label={say("返回行程", "Back to trip")}><X size={20} /></button>
           </div>
@@ -303,7 +314,7 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
             {loading ? <p className="pirate-soft-text">{say("正在装载宝藏…", "Loading your treasure…")}</p>
               : !game.online ? <div className="pirate-connection"><span>📡 {t("needsSignal")}</span><button onClick={() => game.open()}>{say("重试", "Retry")}</button></div>
               : phase === "landed" && caption ? <div ref={rewardRef} className={"pirate-result " + (reward ? "pirate-result-coins " : "") + (caption.good ? "pirate-result-good" : "pirate-result-bad")}>
-                {reward ? <><strong key={reward.id} className="pirate-reward-amount">🪙 +<AnimatedGold value={reward.amount} from={0} reduced={reduced} /></strong><small>{reward.detail}</small></> : <><span>{caption.icon}</span><strong>{caption.text}</strong></>}
+                {reward ? <><strong key={reward.id} className="pirate-reward-amount">🪙 +<AnimatedGold value={reward.amount} from={0} reduced={reduced} /></strong><small>{reward.simple ? say("金币已入账", "ADDED TO YOUR TREASURE") : caption.text}</small></> : <><span>{caption.icon}</span><strong>{caption.text}</strong></>}
                 {caption.good && <div className="pirate-sparkles" aria-hidden="true">✦ <span>✦</span> ✧</div>}
               </div>
               : phase === "spinning" ? <p className="pirate-soft-text">{say("好运正在转动…", "A little luck is on its way…")}</p>
