@@ -2,7 +2,7 @@ import type { PlayerRow } from "./pirate";
 
 // Reserve breathing room for the rim, pointer and shadow inside the stage.
 export function fittedWheelSize(width: number, height: number): number {
-  return Math.max(0, Math.floor(Math.min(350, width - 24, height - 28)));
+  return Math.max(0, Math.floor(Math.min(380, width - 24, height - 28)));
 }
 
 export function animatedGoldValue(from: number, to: number, progress: number): number {
