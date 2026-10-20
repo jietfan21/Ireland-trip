@@ -592,37 +592,41 @@ export const days: Day[] = [
   },
 ];
 
-export type Flight = { code: string; from: string; to: string; dep: string; arr: string; note?: L };
+export type Flight = { code: string; from: string; to: string; dep: string; arr: string; departsAt: string; note?: L };
 
-export const flights: Record<Person["flightGroup"], { title: L; legs: Flight[]; note?: L }> = {
+export const flights: Record<Person["flightGroup"], { title: L; passengers: string[]; legs: Flight[]; note?: L }> = {
   kl4: {
+    passengers: ["dad", "mom", "yao", "jiet"],
     title: { zh: "爸爸 · 妈妈 · 耀 · 捷（卡塔尔航空）", en: "Dad · Mum · Yao · Jiet (Qatar Airways)" },
     legs: [
-      { code: "QR853", from: "KUL T1", to: "DOH", dep: "24 Oct 19:20", arr: "24 Oct 21:40" },
-      { code: "QR019", from: "DOH", to: "DUB T1", dep: "25 Oct 01:30", arr: "25 Oct 06:00" },
-      { code: "QR020", from: "DUB T1", to: "DOH", dep: "6 Nov 07:45", arr: "6 Nov 17:50" },
-      { code: "QR844", from: "DOH", to: "KUL T1", dep: "6 Nov 19:55", arr: "7 Nov 08:15" },
+      { code: "QR853", departsAt: "2026-10-24T19:20:00+08:00", from: "KUL T1", to: "DOH", dep: "24 Oct 19:20", arr: "24 Oct 21:40" },
+      { code: "QR019", departsAt: "2026-10-25T01:30:00+03:00", from: "DOH", to: "DUB T1", dep: "25 Oct 01:30", arr: "25 Oct 06:00" },
+      { code: "QR020", departsAt: "2026-11-06T07:45:00+00:00", from: "DUB T1", to: "DOH", dep: "6 Nov 07:45", arr: "6 Nov 17:50" },
+      { code: "QR844", departsAt: "2026-11-06T19:55:00+03:00", from: "DOH", to: "KUL T1", dep: "6 Nov 19:55", arr: "7 Nov 08:15" },
     ],
     note: { zh: "经济舱，托运行李 25 公斤/人", en: "Economy, 25 kg checked bag each" },
   },
   jiet: {
+    passengers: ["jiet"],
     title: { zh: "捷 · 珀斯往返吉隆坡（AirAsia）", en: "Jiet · Perth ↔ KL (AirAsia)" },
     legs: [
-      { code: "AK605", from: "PER T1", to: "KUL T2", dep: "24 Oct 04:45", arr: "24 Oct 10:20" },
-      { code: "AK604", from: "KUL T2", to: "PER", dep: "7 Nov 21:55", arr: "8 Nov 03:40", note: { zh: "已改时间（原本 22:55）", en: "Rescheduled (was 22:55)" } },
+      { code: "AK605", departsAt: "2026-10-24T04:45:00+08:00", from: "PER T1", to: "KUL T2", dep: "24 Oct 04:45", arr: "24 Oct 10:20" },
+      { code: "AK604", departsAt: "2026-11-07T21:55:00+08:00", from: "KUL T2", to: "PER", dep: "7 Nov 21:55", arr: "8 Nov 03:40", note: { zh: "已改时间（原本 22:55）", en: "Rescheduled (was 22:55)" } },
     ],
   },
   iceland: {
+    passengers: ["ying", "hui"],
     title: { zh: "颖 · 辉（冰岛飞来 · 回台北）", en: "Ying · Hui (from Iceland · home to Taipei)" },
     legs: [
-      { code: "SK596", from: "KEF", to: "CPH", dep: "26 Oct 11:35", arr: "26 Oct 15:40" },
-      { code: "SK2537", from: "CPH T3", to: "DUB", dep: "26 Oct 17:00", arr: "26 Oct 18:20" },
-      { code: "EI602", from: "DUB T2", to: "AMS", dep: "6 Nov 06:15", arr: "6 Nov 08:55", note: { zh: "回程从 T2 出发（不是 T1）", en: "Home flight leaves from T2 (not T1)" } },
-      { code: "CI74", from: "AMS", to: "TPE T1", dep: "6 Nov 10:40", arr: "7 Nov 06:35" },
+      { code: "SK596", departsAt: "2026-10-26T11:35:00+00:00", from: "KEF", to: "CPH", dep: "26 Oct 11:35", arr: "26 Oct 15:40" },
+      { code: "SK2537", departsAt: "2026-10-26T17:00:00+01:00", from: "CPH T3", to: "DUB", dep: "26 Oct 17:00", arr: "26 Oct 18:20" },
+      { code: "EI602", departsAt: "2026-11-06T06:15:00+00:00", from: "DUB T2", to: "AMS", dep: "6 Nov 06:15", arr: "6 Nov 08:55", note: { zh: "回程从 T2 出发（不是 T1）", en: "Home flight leaves from T2 (not T1)" } },
+      { code: "CI74", departsAt: "2026-11-06T10:40:00+01:00", from: "AMS", to: "TPE T1", dep: "6 Nov 10:40", arr: "7 Nov 06:35" },
     ],
     note: { zh: "去程北欧航空经哥本哈根，托运 1 件/人；回程爱尔兰航空 + 中华航空经阿姆斯特丹到台北，托运 2 件/人", en: "Out: SAS via Copenhagen, 1 bag each. Home: Aer Lingus + China Airlines via Amsterdam to Taipei, 2 bags each" },
   },
   local: {
+    passengers: ["rong"],
     title: { zh: "容 · 在爱尔兰读书", en: "Rong · studying in Ireland" },
     legs: [],
     note: { zh: "全程 13 天一起", en: "With us all 13 days" },
@@ -703,3 +707,4 @@ export function stayNavUrl(s: Stay) {
 
 export const TRIP_START = "2026-10-24";
 export const TRIP_END = "2026-11-07";
+

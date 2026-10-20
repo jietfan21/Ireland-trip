@@ -109,6 +109,7 @@ export default function Page() {
           />
           {pirate && person && (
             <PirateSheet
+              onLang={toggleLang}
               onClose={() => {
                 setPirate(false);
                 setPirateTick((n) => n + 1);
