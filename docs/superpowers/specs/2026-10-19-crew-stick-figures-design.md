@@ -2,6 +2,10 @@
 
 Date: 2026-10-19
 
+> Update (20 Oct): the owner removed day-based presence. All seven are always in the playground,
+> independent of the selected itinerary day. The greeting and gesture hint are removed. Bodies
+> now have bent elbows/knees, softer gait and landing crouches; hold/throw/catch/high-five remain.
+
 > Update (same day): the owner asked for the suitcase and umbrella props to be removed after seeing
 > them — too small to read. Everything below about suitcases and umbrellas is no longer built; the
 > cast per day (who is present, waving on the home day) stays.
@@ -139,3 +143,4 @@ them; the family can edit the file later.
 - The actual lines for each person (within the tone above).
 - How the suitcase and umbrella are drawn (tiny SVG shapes in the person's colour is fine).
 - Whether the strip is a `Card` or borderless; whichever looks better in the real app.
+

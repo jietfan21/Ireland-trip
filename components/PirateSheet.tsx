@@ -30,25 +30,25 @@ function countdown(ms: number) {
 function describeLanding(res: SpinResult, index: number, lang: Lang): Caption {
   const t = (key: UiKey, vars?: Record<string, string | number>) => tr(lang, key, vars);
   const name = (id: string) => { const person = people.find((p) => p.id === id); return person ? person[lang] : id; };
-    const w = WEDGES[index];
-    let text = "", good = true, icon = w.emoji;
-    if (!res.applied) {
-      text = res.reason === "no spins" ? t("cap_noSpins") : t("cap_noSignal");
-      good = false; icon = "📡";
-    } else if (w.kind === "win") text = t("cap_coins", { n: res.amount });
-    else if (w.kind === "spins") text = t("cap_spins");
-    else if (w.kind === "shield") text = res.amount === 100 ? t("cap_shieldFull") : t("cap_shield");
-    else {
-      const v = res.victim ? name(res.victim) : "";
-      if (res.outcome === "blocked") {
-        text = w.kind === "steal" ? t("cap_stealBlocked", { who: v }) : t("cap_boomBlocked", { who: v });
-        good = false; icon = "🛡️";
-      } else if (res.outcome === "reflected") {
-        text = w.kind === "steal" ? t("cap_stealReflected", { who: v, n: res.amount }) : t("cap_boomReflected", { who: v, n: res.amount });
-        good = false; icon = "🪞";
-      } else if (res.outcome === "hit") text = w.kind === "steal" ? t("cap_stealHit", { who: v, n: res.amount }) : t("cap_boomHit", { who: v, n: res.amount });
-      else { text = w.kind === "steal" ? t("cap_stealNone") : t("cap_boomNone"); good = false; icon = "🌊"; }
-    }
+  const w = WEDGES[index];
+  let text = "", good = true, icon = w.emoji;
+  if (!res.applied) {
+    text = res.reason === "no spins" ? t("cap_noSpins") : t("cap_noSignal");
+    good = false; icon = "📡";
+  } else if (w.kind === "win") text = t("cap_coins", { n: res.amount });
+  else if (w.kind === "spins") text = t("cap_spins");
+  else if (w.kind === "shield") text = res.amount === 100 ? t("cap_shieldFull") : t("cap_shield");
+  else {
+    const v = res.victim ? name(res.victim) : "";
+    if (res.outcome === "blocked") {
+      text = w.kind === "steal" ? t("cap_stealBlocked", { who: v }) : t("cap_boomBlocked", { who: v });
+      good = false; icon = "🛡️";
+    } else if (res.outcome === "reflected") {
+      text = w.kind === "steal" ? t("cap_stealReflected", { who: v, n: res.amount }) : t("cap_boomReflected", { who: v, n: res.amount });
+      good = false; icon = "🪞";
+    } else if (res.outcome === "hit") text = w.kind === "steal" ? t("cap_stealHit", { who: v, n: res.amount }) : t("cap_boomHit", { who: v, n: res.amount });
+    else { text = w.kind === "steal" ? t("cap_stealNone") : t("cap_boomNone"); good = false; icon = "🌊"; }
+  }
   return { text, good, icon };
 }
 

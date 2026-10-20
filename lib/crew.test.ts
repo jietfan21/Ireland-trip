@@ -1,30 +1,12 @@
 // Run: node --test lib/crew.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bubbleLeft, castForDay, crew, pickLine, releaseVelocity, stepToss, stepWalk } from "./crew.ts";
+import { bubbleLeft, crew, pickLine, releaseVelocity, stepToss, stepWalk } from "./crew.ts";
 import { people } from "./trip.ts";
 
-const ids = (n: number) => castForDay(n).map((c) => c.id).sort();
 const all = people.map((p) => p.id).sort();
 
 test("crew covers exactly the people", () => assert.deepEqual(crew.map((c) => c.id).sort(), all));
-
-test("day 0: everyone, nobody waving", () => {
-  const c = castForDay(0);
-  assert.deepEqual(c.map((x) => x.id).sort(), all);
-  assert.ok(c.every((x) => !x.waving));
-});
-
-test("day 1: Ying & Hui not yet", () => assert.deepEqual(ids(1), ["dad", "jiet", "mom", "rong", "yao"]));
-
-test("day 2, 12 and 13: everyone, nobody waving", () => {
-  for (const n of [2, 12, 13]) {
-    assert.deepEqual(ids(n), all);
-    assert.ok(castForDay(n).every((x) => !x.waving));
-  }
-});
-
-test("day 14: everyone waving", () => assert.ok(castForDay(14).every((x) => x.waving)));
 
 test("every member has 5 bilingual lines", () =>
   assert.ok(crew.every((m) => m.lines.length === 5 && m.lines.every((l) => l.zh && l.en))));

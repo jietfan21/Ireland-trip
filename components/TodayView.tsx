@@ -34,7 +34,7 @@ export default function TodayView({ jumpTo }: { jumpTo?: number }) {
 
   return (
     <div className="space-y-4">
-      <Crew day={day} />
+      <Crew />
 
       {before > 0 && (
         <button
