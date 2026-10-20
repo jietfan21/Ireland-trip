@@ -27,7 +27,7 @@ export const WEDGES: WedgeDef[] = [
   { kind: "win", amount: 200, emoji: "💰", label: { zh: "200", en: "200" }, color: "#0369a1" },
   { kind: "spins", emoji: "🎰", label: { zh: "+3 次", en: "+3 SPINS" }, color: "#7c3aed" },
   { kind: "win", amount: 300, emoji: "💰", label: { zh: "300", en: "300" }, color: "#1f7a5a" },
-  { kind: "win", amount: 500, emoji: "💎", label: { zh: "500", en: "500" }, color: "#0369a1" },
+  { kind: "win", amount: 500, emoji: "💰", label: { zh: "500", en: "500" }, color: "#0369a1" },
 ];
 
 // Coin wedges grow with the trip: ×(1 + day/7). Practice is ×1. Mirrors pirate_mult in SQL.
@@ -193,3 +193,4 @@ export function todayOverride(search: string, hostname: string): string | null {
   const v = new URLSearchParams(search).get("today");
   return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
 }
+
