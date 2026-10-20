@@ -7,3 +7,10 @@ next-env.d.ts
 .DS_Store
 .vercel
 public/maplibre-gl-worker.mjs
+public/icon.svg
+public/family-icon-*.png
+public/family-favicon-*.png
+public/family-favicon.ico
+public/family-apple-touch-icon.png
+public/apple-touch-icon.png
+
