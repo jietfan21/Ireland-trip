@@ -46,6 +46,20 @@ body {
   scrollbar-width: none;
 }
 
+.app-brand { font-size: clamp(15px, 4.6vw, 19px); white-space: nowrap; }
+.app-shell button, .app-shell a { -webkit-tap-highlight-color: transparent; }
+.app-shell button:focus-visible, .app-shell a:focus-visible, .app-shell summary:focus-visible { outline: 3px solid var(--color-shamrock); outline-offset: 3px; }
+.info-tabs { position: sticky; top: calc(var(--app-header-height, 65px) + 8px); z-index: 20; box-shadow: 0 0 0 8px var(--color-cream), 0 5px 14px #17322d0d; }
+.app-map-view { height: calc(100dvh - var(--app-header-height, 65px) - var(--app-nav-height, 76px) - 12px); }
+.app-map-view .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+.checklist-section > summary { list-style: none; }
+.checklist-section > summary::-webkit-details-marker { display: none; }
+.checklist-chevron { transition: transform .18s ease; }
+.checklist-section[open] > summary .checklist-chevron { transform: rotate(180deg); }
+.checklist-item { transition: background-color .15s ease; }
+.checklist-item:active { background: var(--color-shamrock-soft); }
+@media (prefers-reduced-motion: reduce) { .checklist-chevron, .checklist-item { transition: none; } }
+
 .maplibregl-popup-content {
   border-radius: 14px;
   padding: 12px 14px;

@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { BedDouble, Car, Phone, Plane, TriangleAlert } from "lucide-react";
 import { car, emergency, flights, people, stays, stayNavUrl } from "@/lib/trip";
 import { daysBetween, fmtDate, Card, CallButton, NavButton, useApp } from "./common";
+import { useViewState } from "./ViewMemory";
 
 type Seg = "stays" | "flights" | "car" | "sos";
 
 export default function InfoView() {
   const { t } = useApp();
-  const [seg, setSeg] = useState<Seg>("stays");
+  const [seg, setSeg] = useViewState<Seg>("info.section", "stays");
   const segs: { id: Seg; icon: React.ReactNode }[] = [
     { id: "stays", icon: <BedDouble size={18} /> },
     { id: "flights", icon: <Plane size={18} /> },
@@ -18,11 +18,12 @@ export default function InfoView() {
   ];
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-card p-1">
+      <div className="info-tabs grid grid-cols-4 gap-1 rounded-2xl border border-line bg-card p-1">
         {segs.map((s) => (
           <button
             key={s.id}
-            onClick={() => setSeg(s.id)}
+            onClick={() => { if (seg !== s.id) { setSeg(s.id); window.scrollTo({ top: 0, behavior: "instant" }); } }}
+            aria-pressed={seg === s.id}
             className={`flex flex-col items-center gap-0.5 rounded-xl py-2 text-[14px] font-bold ${seg === s.id ? "bg-shamrock text-white" : "text-sub"}`}
           >
             {s.icon}
@@ -220,3 +221,4 @@ function Sos() {
     </div>
   );
 }
+

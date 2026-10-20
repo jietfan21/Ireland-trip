@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, ListChecks } from "lucide-react";
 import { days, TRIP_END, TRIP_START } from "@/lib/trip";
 import { useWeather } from "@/lib/weather";
 import Crew from "./Crew";
 import DayView from "./DayView";
 import { daysBetween, irelandToday, useApp } from "./common";
+import { useViewState } from "./ViewMemory";
 
 function todayIndex(today: string) {
   if (today < TRIP_START) return 0;
@@ -16,19 +17,16 @@ function todayIndex(today: string) {
 
 export default function TodayView({ jumpTo }: { jumpTo?: number }) {
   const { t, p, person, go } = useApp();
-  const [today, setToday] = useState<string | null>(null);
-  const [idx, setIdx] = useState(0);
+  const today = irelandToday();
+  const [idx, setIdx] = useViewState("today.day", () => jumpTo ?? todayIndex(today));
 
-  useEffect(() => {
-    const d = irelandToday();
-    setToday(d);
-    setIdx(jumpTo ?? todayIndex(d));
-  }, [jumpTo]);
+  useLayoutEffect(() => {
+    if (jumpTo !== undefined) setIdx(jumpTo);
+  }, [jumpTo, setIdx]);
 
   const real = useMemo(() => (today ? todayIndex(today) : 0), [today]);
   const day = days[idx];
   const weather = useWeather(day);
-  if (!today) return null;
 
   const before = today < TRIP_START ? daysBetween(today, TRIP_START) : 0;
   const after = today > TRIP_END;
@@ -66,7 +64,7 @@ export default function TodayView({ jumpTo }: { jumpTo?: number }) {
         </button>
         <div className="text-center text-[15px] font-semibold text-sub">
           {isPreview ? (
-            <button onClick={() => setIdx(real)} className="rounded-full bg-shamrock-soft px-4 py-2 text-shamrock">
+            <button onClick={() => setIdx(real)} className="min-h-11 rounded-full bg-shamrock-soft px-4 py-2 text-shamrock">
               {before > 0 ? t("previewing") : t("backToday")}
             </button>
           ) : (
@@ -87,3 +85,4 @@ export default function TodayView({ jumpTo }: { jumpTo?: number }) {
     </div>
   );
 }
+

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { checklist, people } from "@/lib/trip";
 import { readLocal, sharedEnabled, useTicks, writeLocal } from "@/lib/store";
 import { Avatar, Card, useApp } from "./common";
+import { useViewState } from "./ViewMemory";
 
 const CODES = ["EUR", "GBP", "MYR", "AUD"] as const;
 type Code = (typeof CODES)[number];
@@ -40,8 +41,8 @@ function useRates() {
 function Currency() {
   const { t, lang } = useApp();
   const { r, date } = useRates();
-  const [from, setFrom] = useState<Code>("EUR");
-  const [amount, setAmount] = useState("10");
+  const [from, setFrom] = useViewState<Code>("currency.from", "EUR");
+  const [amount, setAmount] = useViewState("currency.amount", "10");
   const n = Number(amount.replace(",", ".")) || 0;
   const fmt = (v: number) => v.toLocaleString("en", { maximumFractionDigits: v < 100 ? 2 : 0 });
 
@@ -54,7 +55,8 @@ function Currency() {
           <button
             key={c}
             onClick={() => setFrom(c)}
-            className={`rounded-xl py-2 text-[15px] font-bold ${from === c ? "bg-shamrock text-white" : "text-sub"}`}
+            aria-pressed={from === c}
+            className={`min-h-11 rounded-xl py-2 text-[15px] font-bold ${from === c ? "bg-shamrock text-white" : "text-sub"}`}
           >
             {SYMBOL[c]}
           </button>
@@ -72,7 +74,7 @@ function Currency() {
       </label>
       <div className="mt-2 flex gap-2">
         {[5, 10, 20, 50, 100].map((v) => (
-          <button key={v} onClick={() => setAmount(String(v))} className="flex-1 rounded-xl border border-line py-1.5 text-[15px] font-semibold">
+          <button key={v} onClick={() => setAmount(String(v))} className="min-h-11 flex-1 rounded-xl border border-line py-1.5 text-[15px] font-semibold">
             {v}
           </button>
         ))}
@@ -94,14 +96,21 @@ function Currency() {
 function Checklist() {
   const { t, p, person } = useApp();
   const { ticks, toggle } = useTicks();
+  const [sections, setSections] = useViewState<Record<string, boolean>>("checklist.sections", {});
   if (!person) return null;
 
   return (
     <div className="space-y-3">
       <p className="px-1 text-[14px] text-sub">{sharedEnabled ? `✅ ${t("synced")}` : `📱 ${t("localOnly")}`}</p>
-      {checklist.map((sec) => (
+      {checklist.map((sec, index) => (
         <Card key={sec.title.en}>
-          <h3 className="mb-1 text-[18px] font-bold">{p(sec.title)}</h3>
+          <details className="checklist-section" open={sections[sec.title.en] ?? index === 0} onToggle={(e) => {
+            const open = e.currentTarget.open;
+            setSections((current) => (current[sec.title.en] ?? index === 0) === open ? current : { ...current, [sec.title.en]: open });
+          }}>
+          <summary className="-mx-1 flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-1">
+            <h3 className="text-[18px] font-bold">{p(sec.title)}</h3><ChevronDown className="checklist-chevron shrink-0 text-sub" size={20} aria-hidden="true" />
+          </summary>
           <ul>
             {sec.items
               .filter((it) => it.who !== "drivers" || person.driver)
@@ -110,10 +119,10 @@ function Checklist() {
                 const done = !!ticks[key];
                 const crew = it.who === "team" ? [] : people.filter((x) => (it.who !== "drivers" || x.driver) && ticks[`${it.id}:${x.id}`]);
                 return (
-                  <li key={it.id} className="border-b border-line py-2.5 last:border-0">
-                    <button onClick={() => toggle(key, person.id)} className="flex w-full items-start gap-3 text-left">
+                  <li key={it.id} className="border-b border-line py-1 last:border-0">
+                    <button onClick={() => toggle(key, person.id)} aria-pressed={done} className="checklist-item flex min-h-11 w-full items-center gap-3 rounded-xl py-2 text-left">
                       <span
-                        className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg border-2 ${
+                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border-2 ${
                           done ? "border-shamrock bg-shamrock text-white" : "border-line bg-white"
                         }`}
                       >
@@ -132,6 +141,7 @@ function Checklist() {
                 );
               })}
           </ul>
+          </details>
         </Card>
       ))}
     </div>
@@ -146,3 +156,4 @@ export default function ToolsView() {
     </div>
   );
 }
+
