@@ -1,0 +1,30 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { nextWheelRotation, stealCandidates, mirrorOrderChanged } from "./piratePresentation.ts";
+
+test("every landing aligns with the pointer and repeated spins keep moving forward", () => {
+  for (const count of [1, 2, 6, 10]) {
+    let previous = 0;
+    for (const target of [...Array(count).keys(), 0, 0, count - 1]) {
+      const rotation = nextWheelRotation(previous, target, count);
+      assert.ok(rotation >= previous + 1800);
+      assert.ok(Math.abs(((rotation + (target + 0.5) * 360 / count) % 360)) < 0.00001);
+      previous = rotation;
+    }
+  }
+});
+
+test("steal wheel protects last place, falls back for ties, and includes the actual server victim", () => {
+  const board = [{ id: "me", gold: 1000 }, { id: "rich", gold: 2000 }, { id: "poor", gold: 100 }];
+  assert.deepEqual(stealCandidates(board, "me", "rich"), ["rich"]);
+  assert.deepEqual(stealCandidates(board, "me", "poor"), ["rich", "poor"]);
+  assert.deepEqual(stealCandidates(board.map((x) => ({ ...x, gold: 1000 })), "me", "rich"), ["rich", "poor"]);
+  assert.deepEqual(stealCandidates([{ id: "me", gold: 1000 }], "me", "late"), ["late"]);
+});
+
+test("mirror confirmation must be reviewed again if the resource being spent changes", () => {
+  const order = { kind: "buy" as const, gold: 1000, shields: 3, price: 200 };
+  assert.equal(mirrorOrderChanged(order, { gold: 900, shields: 3 }, 200), true);
+  assert.equal(mirrorOrderChanged(order, { gold: 1000, shields: 2 }, 200), false);
+  assert.equal(mirrorOrderChanged({ ...order, kind: "trade" }, { gold: 1000, shields: 2 }, 200), true);
+});
