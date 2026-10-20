@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { people } from "@/lib/trip";
 import { coinValue, WEDGES } from "@/lib/pirate";
-import { nextWheelRotation } from "@/lib/piratePresentation";
+import { fittedWheelSize, nextWheelRotation } from "@/lib/piratePresentation";
 import { useApp } from "./common";
 
 const R = 160;
@@ -13,13 +13,27 @@ export default function PirateWheel({ rotation, duration, today, candidates, lab
   rotation: number; duration: number; today: string; candidates?: string[]; label: string;
 }) {
   const { p } = useApp();
+  const frame = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState(0);
+  useLayoutEffect(() => {
+    const stage = frame.current?.parentElement;
+    if (!stage) return;
+    const resize = () => {
+      const rect = stage.getBoundingClientRect();
+      setSize(fittedWheelSize(rect.width, rect.height));
+    };
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, []);
   const count = candidates?.length ?? WEDGES.length;
   // A single possible target still gets a full circular face.
   const faces = count === 1 && candidates ? [candidates[0], candidates[0]] : candidates;
   const segments = faces ?? WEDGES;
   const step = 360 / segments.length;
   return (
-    <div className={`pirate-wheel-frame ${candidates ? "pirate-wheel-steal" : ""}`} role="img" aria-label={label}>
+    <div ref={frame} className={`pirate-wheel-frame ${candidates ? "pirate-wheel-steal" : ""}`} role="img" aria-label={label} style={{ width: size, height: size, visibility: size > 0 ? "visible" : "hidden" }}>
       <div className="pirate-wheel-glow" />
       <div className="pirate-pointer" aria-hidden="true" />
       <div className="pirate-wheel-rim">

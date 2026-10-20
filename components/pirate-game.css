@@ -32,12 +32,12 @@
 .pirate-stage-heading { text-align: center; margin: 0; align-self: center; }
 .pirate-stage-heading h2 { font-size: 23px; line-height: 1.25; font-weight: 900; letter-spacing: -.8px; color: #fff0c7; text-shadow: 0 2px 0 #0006; }
 .pirate-stage-heading .pirate-eyebrow { margin-bottom: 4px; font-size: 8px; letter-spacing: 1.8px; }
-.pirate-stage { position: relative; width: 100%; height: 100%; min-height: 0; display: grid; place-items: center; }
-.pirate-wheel-frame { position: relative; width: auto; height: min(100%, 350px); max-width: 100%; aspect-ratio: 320 / 325; padding: 9px 9px 14px; justify-self: center; align-self: center; }
+.pirate-stage { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; isolation: isolate; }
+.pirate-wheel-frame { position: absolute; left: 50%; top: 50%; translate: -50% -50%; padding: 8px; box-sizing: border-box; }
 .pirate-wheel-glow { position: absolute; inset: -10%; border-radius: 50%; background: radial-gradient(circle, #eaca7747, #9acc9b15 48%, transparent 69%); pointer-events: none; }
-.pirate-wheel-rim { position: relative; width: 100%; aspect-ratio: 1; border: 7px solid #b67728; border-radius: 50%; background: #ffdf8c; box-shadow: 0 0 0 2px #ffe5a0, 0 0 0 5px #7a4b23, 0 0 0 7px #d4ac53, inset 0 0 0 4px #66421e, 0 14px 0 #051e2899, 0 20px 35px #0006; }
+.pirate-wheel-rim { position: relative; width: 100%; height: 100%; border: 7px solid #b67728; border-radius: 50%; background: #ffdf8c; box-shadow: 0 0 0 2px #ffe5a0, 0 0 0 5px #7a4b23, 0 0 0 7px #d4ac53, inset 0 0 0 4px #66421e, 0 14px 0 #051e2899, 0 20px 35px #0006; }
 .pirate-wheel-rim::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; pointer-events: none; background: repeating-conic-gradient(from 0deg, #fff5bd 0deg 1.2deg, transparent 1.2deg 18deg); mask: radial-gradient(transparent 68.5%, #000 69%, #000 70%, transparent 70.5%); }
-.pirate-wheel-disc { display: block; width: 100%; height: 100%; border-radius: 50%; transition-property: transform; transition-timing-function: cubic-bezier(.12,.75,.15,1); will-change: transform; }
+.pirate-wheel-disc { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border-radius: 50%; transition-property: transform; transition-timing-function: cubic-bezier(.12,.75,.15,1); will-change: transform; }
 .pirate-wheel-hub { position: absolute; inset: 50% auto auto 50%; display: grid; place-items: center; width: 62px; height: 62px; transform: translate(-50%, -50%); border: 4px solid #ffdf8a; border-radius: 50%; background: radial-gradient(circle at 40% 30%, #e6b94c, #ac7327); box-shadow: 0 3px 0 #53391d, 0 3px 12px #0007, inset 0 1px 0 #fff9; font-size: 31px; }
 .pirate-pointer { position: absolute; z-index: 2; top: -1px; left: 50%; width: 28px; height: 40px; transform: translateX(-50%); background: linear-gradient(90deg, #ffebac, #e5a847); clip-path: polygon(0 0, 100% 0, 100% 35%, 50% 100%, 0 35%); filter: drop-shadow(0 3px 1px #0008); }
 .pirate-wheel-base { position: absolute; bottom: 1px; left: 50%; width: 40%; height: 13px; transform: translateX(-50%); border-radius: 70% 70% 3px 3px; border-top: 2px solid #e4bd64; background: linear-gradient(#b08037, #714a22); z-index: -1; }
@@ -55,7 +55,7 @@
 .pirate-gold-button:not(:disabled):hover { filter: brightness(1.07); }
 .pirate-gold-button:not(:disabled):active { transform: translateY(3px); box-shadow: inset 0 2px 0 #fff8, 0 2px 0 #8c551f; }
 .pirate-gold-button:disabled { background: linear-gradient(#7a8e80, #5e7267); color: #d9e2d5; border-color: #b2c5a955; box-shadow: 0 4px 0 #34493d; text-shadow: none; }
-.pirate-spin-button { min-height: 0; height: 100%; max-width: 340px; justify-self: center; padding-top: 7px; padding-bottom: 7px; }
+.pirate-spin-button { position: relative; z-index: 2; min-height: 0; height: 100%; max-width: 340px; justify-self: center; padding-top: 7px; padding-bottom: 7px; }
 .pirate-spin-button > span { display: block; line-height: 1.2; font-size: 19px; }
 .pirate-spin-button small { display: block; font-size: 10px; letter-spacing: 1px; font-weight: 800; margin-top: 4px; opacity: .8; }
 .pirate-refill { min-height: 0; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 5px 0 3px; color: #b2cec4; font-size: 9px; letter-spacing: .8px; }
@@ -208,3 +208,18 @@
   .pirate-stage-effect > .pirate-wheel-frame { transition: none; }
   .pirate-effect-spins .pirate-spin-token { opacity: 1; transform: translateX(var(--token-x)) rotate(var(--token-tilt)); }
 }
+
+.pirate-session-summary { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 0 12px; scrollbar-width: thin; scrollbar-color: #e6c88055 transparent; }
+.pirate-session-summary:focus { outline: none; }
+.pirate-session-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pirate-session-heading h2 { font-size: 25px; font-weight: 900; line-height: 1.3; color: #ffe4a5; }
+.pirate-summary-wheel { flex-shrink: 0; min-height: 42px; border: 1px solid #e6c88066; border-radius: 12px; padding: 8px 12px; background: #dcb96812; font-size: 12px; font-weight: 800; color: #ffe4a5; }
+.pirate-session-refill { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #e6c88030; background: #07273270; border-radius: 12px; padding: 11px 12px; margin: 12px 0 18px; font-size: 12px; color: #b0d2ce; }
+.pirate-session-refill strong { color: #ffe4a5; font-size: 19px; font-variant-numeric: tabular-nums; }
+.pirate-session-last-result { border-left: 3px solid #e9c679; border-radius: 0 10px 10px 0; padding: 10px 13px; margin-bottom: 18px; background: #f0d58e0d; }
+.pirate-session-last-result small { display: block; font-size: 9px; letter-spacing: 1.2px; color: #b0d2ce; margin-bottom: 4px; }
+.pirate-session-last-result strong { font-size: 14px; color: #ffe4a5; }
+.pirate-session-last-result.is-bad { border-color: #dca2b1; }
+.pirate-session-last-result.is-bad strong { color: #ffdfde; }
+.pirate-ranking-title { margin-bottom: 8px; font-size: 17px; font-weight: 800; color: #ffe4a5; }
+.pirate-summary-link { min-height: 26px; padding: 0 3px; border-bottom: 1px solid #e6c88066; font-size: 10px; font-weight: 700; color: #ffe4a5; }

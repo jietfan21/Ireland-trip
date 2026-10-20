@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen, HelpCircle, Shield, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import "./pirate-game.css";
 import { people, type Person } from "@/lib/trip";
-import { DAYS, MAX_SHIELDS, WEDGES, dayMultiplier, eventText, mirrorPrice, leaderboard, nextDublinMidnightMs, pickWedge, todayOverride, tripDayNumber, victims, visibleEvents, type Event, type PlayerRow } from "@/lib/pirate";
+import { DAYS, MAX_SHIELDS, WEDGES, dayMultiplier, mirrorPrice, leaderboard, nextDublinMidnightMs, pickWedge, todayOverride, tripDayNumber, victims, visibleEvents, type Event, type PlayerRow } from "@/lib/pirate";
 import { mirrorOrderChanged, nextWheelRotation, stealCandidates, type MirrorOrder } from "@/lib/piratePresentation";
 import { irelandToday, usePirate, type SpinResult } from "@/lib/pirateStore";
 import { readLocal, writeLocal } from "@/lib/store";
@@ -12,6 +12,7 @@ import { Avatar, useApp } from "./common";
 import PirateWheel, { StealWheel } from "./PirateWheel";
 import { AnimatedGold, CoinCollection } from "./PirateCoins";
 import PirateEffects, { type PirateEffect } from "./PirateEffects";
+import PirateCrew from "./PirateCrew";
 
 type Phase = "idle" | "spinning" | "stealing" | "pick" | "impact" | "landed";
 type Panel = "defend" | "crew" | "rules" | null;
@@ -46,6 +47,9 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
   const [help, setHelp] = useState(false);
   const [order, setOrder] = useState<MirrorOrder | null>(null);
   const [notice, setNotice] = useState("");
+  const [viewEmptyWheel, setViewEmptyWheel] = useState(false);
+  const [summaryReady, setSummaryReady] = useState(false);
+  const summaryRef = useRef<HTMLElement>(null);
   const lock = useRef(false);
   const alive = useRef(true);
   const audio = useRef<AudioContext | null>(null);
@@ -65,7 +69,6 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
   const name = (id: string) => { const person = people.find((x) => x.id === id); return person ? p(person) : id; };
   const loading = !game.ready || (game.online && game.season !== "over" && !game.mine);
   const ended = game.season === "over";
-  const contested = board.some((x) => x.gold !== board[0]?.gold);
   const seasonLabel = game.season === "practice" ? t("practiceBanner") : ended ? t("gameOver") : t("dayOf", { n: tripDayNumber(today) });
 
   useEffect(() => {
@@ -236,6 +239,19 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
 
   const resolving = phase === "spinning" || phase === "stealing" || phase === "impact";
   const canSpin = !busy && !loading && game.online && left > 0 && !ended && phase !== "pick";
+  const exhausted = !loading && game.online && Boolean(mine) && left === 0 && !mine?.boom_pending && !ended;
+  const showSummary = exhausted && summaryReady && !viewEmptyWheel;
+  useEffect(() => {
+    if (!exhausted) setViewEmptyWheel(false);
+    if (!exhausted || busy || resolving || phase === "pick") { setSummaryReady(false); return; }
+    if (phase !== "landed") { setSummaryReady(true); return; }
+    // Let the 900ms count-up and 1200ms coin collection finish first.
+    const timer = setTimeout(() => setSummaryReady(true), 1600);
+    return () => clearTimeout(timer);
+  }, [exhausted, busy, resolving, phase]);
+  useEffect(() => {
+    if (showSummary && !panel) summaryRef.current?.focus({ preventScroll: true });
+  }, [showSummary, panel]);
   const panelTitle = order ? (order.kind === "trade" ? say("用盾牌换镜子？", "Trade shields for a mirror?") : say("购买镜子？", "Buy a mirror?"))
     : panel === "defend" ? say("守护你的宝藏", "Protect your treasure") : panel === "crew" ? t("leaderboard") : t("howToPlay");
 
@@ -261,7 +277,12 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
           </button>
         </section>
 
-        <main className="pirate-play">
+        {showSummary ? <main ref={summaryRef} tabIndex={-1} className="pirate-session-summary" aria-labelledby="pirate-session-title">
+          <div className="pirate-session-heading"><div><div className="pirate-eyebrow">{say("本轮冒险告一段落", "THAT'S A WRAP, CAPTAIN")}</div><h2 id="pirate-session-title">{say("家族战报", "From the crew")}</h2></div><button className="pirate-summary-wheel" onClick={() => setViewEmptyWheel(true)}>{say("查看转盘", "View wheel")} ↗</button></div>
+          <div className="pirate-session-refill"><span>🎡 {t("nextDayIn")}</span><strong>{timeLeft}</strong></div>
+          {caption && <div className={"pirate-session-last-result " + (caption.good ? "is-good" : "is-bad")}><small>{say("最后一转", "LAST SPIN")}</small><strong>{caption.icon} {caption.text}</strong></div>}
+          <PirateCrew board={board} events={events} me={me} showTitle />
+        </main> : <main className="pirate-play">
           <div className="pirate-stage-heading">
             <div className="pirate-eyebrow">{phase === "stealing" ? say("谁的宝藏会被偷走？", "WHOSE TREASURE WILL IT BE?") : phase === "pick" ? say("你的炸弹已准备好", "YOUR CANNON IS READY") : ended ? say("海湾的新王者", "THE COVE HAS ITS CHAMPION") : say("转出好运 · 偷走宝藏", "SPIN BIG. STEAL TREASURE.")}</div>
             <h2>{phase === "stealing" ? say("寻找你的目标", "The stealing wheel") : phase === "pick" ? say("选择你的目标", "Choose your target") : ended ? t("gameOver") : say("幸运转盘", "Wheel of fortune")}</h2>
@@ -297,11 +318,11 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
             <span>{resolving ? say("冒险进行中…", "ADVENTURE IN MOTION…") : phase === "pick" ? say("选择上方的目标", "CHOOSE A TARGET ABOVE") : ended ? say("本次航行已结束", "VOYAGE COMPLETE") : left <= 0 && !loading ? say("等待新的转盘次数", "MORE SPINS ON THE HORIZON") : phase === "landed" ? t("spinAgain") : t("spin")}</span>
             {!resolving && !ended && phase !== "pick" && <small>🎡 {left} · {t("spinsLeft")}</small>}
           </button>
-          <div className="pirate-refill">{!ended && !loading && !resolving && <><span>{left <= 0 ? t("nextDayIn") : say("每日补充 +5 次", "DAILY REFILL +5 SPINS")}</span><strong>{timeLeft}</strong></>}</div>
-        </main>
+          <div className="pirate-refill">{!ended && !loading && !resolving && <><span>{left <= 0 ? t("nextDayIn") : say("每日补充 +5 次", "DAILY REFILL +5 SPINS")}</span><strong>{timeLeft}</strong>{exhausted && viewEmptyWheel && <button className="pirate-summary-link" onClick={() => setViewEmptyWheel(false)}>{say("排行榜与动态", "Rankings & news")} ›</button>}</>}</div>
+        </main>}
 
         <nav className="pirate-dock" aria-label={say("游戏菜单", "Game menu")}>
-          <button className="pirate-dock-active" disabled={busy} onClick={() => openPanel(null)}><span>🎡</span>{say("转盘", "PLAY")}</button>
+          <button className="pirate-dock-active" disabled={busy} onClick={() => { openPanel(null); if (exhausted) setViewEmptyWheel(false); }}><span>{showSummary ? "🏆" : "🎡"}</span>{showSummary ? say("战报", "SUMMARY") : say("转盘", "PLAY")}</button>
           <button disabled={busy} onClick={() => { openPanel("defend"); setHelp(false); }}><Shield size={23} />{say("防御", "DEFEND")}{mine?.mirror && <i />}</button>
           <button disabled={busy} onClick={() => openPanel("crew")}><Trophy size={23} />{say("家族", "CREW")}</button>
           <button disabled={busy} onClick={() => openPanel("rules")}><BookOpen size={23} />{say("玩法", "RULES")}</button>
@@ -336,10 +357,7 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
             <div className="pirate-shop-option"><div><strong>{price.toLocaleString()} 🪙 → 1 🪞</strong><small>{say("金币购买 · 家族可见", "GOLD PURCHASE · PUBLIC")}</small></div><button disabled={busy || loading || !game.online || ended || (game.mine?.gold ?? 0) < price} onClick={() => quote("buy")}>{say("购买", "Buy")}</button></div>
             <p className="pirate-soft-text pirate-shop-hint">{say("点击兑换或购买后，先确认再扣除。", "You'll review and confirm the cost before spending.")}</p>
           </>}
-        </div> : panel === "crew" ? <div>
-          <div className="pirate-ranking">{board.map((x, i) => <div key={x.id} className={x.id === me ? "is-me" : ""}><span>{i === 0 && contested ? "👑" : i + 1}</span><Avatar person={who(x.id)} size={37} /><strong>{name(x.id)}{x.id === me && <small>{say("你", "YOU")}</small>}</strong><b>{x.gold.toLocaleString()} <small>🪙</small></b></div>)}</div>
-          <h3 className="pirate-feed-title">{t("feed")}</h3><ul className="pirate-feed">{events.length ? events.map((e) => <li key={e.id}><time>{e.day.slice(5).replace("-", "/")}</time><span>{p(eventText(e, name))}</span></li>) : <li>{say("海湾还很安静，转一次开启冒险。", "Quiet seas. Take a spin to start the adventure.")}</li>}</ul>
-        </div> : <ul className="pirate-rules">{RULES.map((rule, i) => <li key={i}><span>{String(i + 1).padStart(2, "0")}</span><p>{p(rule)}</p></li>)}</ul>}
+        </div> : panel === "crew" ? <PirateCrew board={board} events={events} me={me} /> : <ul className="pirate-rules">{RULES.map((rule, i) => <li key={i}><span>{String(i + 1).padStart(2, "0")}</span><p>{p(rule)}</p></li>)}</ul>}
       </GameDialog>}
     </div>
   );
