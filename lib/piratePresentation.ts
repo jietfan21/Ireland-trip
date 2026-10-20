@@ -1,5 +1,10 @@
 import type { PlayerRow } from "./pirate";
 
+export function animatedGoldValue(from: number, to: number, progress: number): number {
+  const t = Math.max(0, Math.min(1, progress));
+  return Math.round(from + (to - from) * (1 - (1 - t) ** 3));
+}
+
 // Keep turning forwards from the previous landing, including consecutive identical results.
 export function nextWheelRotation(previous: number, target: number, count: number, turns = 5): number {
   const landing = (360 - (target + 0.5) * (360 / count)) % 360;

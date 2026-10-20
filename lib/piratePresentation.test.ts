@@ -1,6 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { nextWheelRotation, stealCandidates, mirrorOrderChanged } from "./piratePresentation.ts";
+import { animatedGoldValue, nextWheelRotation, stealCandidates, mirrorOrderChanged } from "./piratePresentation.ts";
+
+test("gold count stays between balances and finishes at the exact server total", () => {
+  for (const [from, to] of [[1000, 1500], [1500, 1200], [0, 500], [2345, 2375]]) {
+    assert.equal(animatedGoldValue(from, to, 0), from);
+    assert.equal(animatedGoldValue(from, to, 1), to);
+    assert.equal(animatedGoldValue(from, to, 2), to);
+    assert.equal(animatedGoldValue(from, to, -1), from);
+    const values = Array.from({ length: 20 }, (_, i) => animatedGoldValue(from, to, i / 19));
+    assert.ok(values.every((n) => n >= Math.min(from, to) && n <= Math.max(from, to)));
+    assert.ok(values.every((n, i) => i === 0 || (to > from ? n >= values[i - 1] : n <= values[i - 1])));
+  }
+});
 
 test("every landing aligns with the pointer and repeated spins keep moving forward", () => {
   for (const count of [1, 2, 6, 10]) {

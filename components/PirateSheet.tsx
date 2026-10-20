@@ -10,6 +10,8 @@ import { irelandToday, usePirate, type SpinResult } from "@/lib/pirateStore";
 import { readLocal, writeLocal } from "@/lib/store";
 import { Avatar, useApp } from "./common";
 import PirateWheel, { StealWheel } from "./PirateWheel";
+import { AnimatedGold, CoinCollection } from "./PirateCoins";
+import PirateEffects, { type PirateEffect } from "./PirateEffects";
 
 type Phase = "idle" | "spinning" | "stealing" | "pick" | "impact" | "landed";
 type Panel = "defend" | "crew" | "rules" | null;
@@ -32,12 +34,12 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [panel, setPanel] = useState<Panel>(null);
   const [rotation, setRotation] = useState(0);
-  const [wedge, setWedge] = useState<number | null>(null);
   const [caption, setCaption] = useState<Caption | null>(null);
+  const [reward, setReward] = useState<{ id: number; amount: number; detail: string } | null>(null);
   const [frozen, setFrozen] = useState<Snapshot | null>(null);
   const [busy, setBusy] = useState(false);
   const [steal, setSteal] = useState<{ candidates: string[]; victim: string } | null>(null);
-  const [impact, setImpact] = useState<SpinResult | null>(null);
+  const [effect, setEffect] = useState<PirateEffect | null>(null);
   const [timeLeft, setTimeLeft] = useState("");
   const [reduced, setReduced] = useState(false);
   const [sound, setSound] = useState(false);
@@ -48,6 +50,9 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
   const alive = useRef(true);
   const audio = useRef<AudioContext | null>(null);
   const soundEnabled = useRef(false);
+  const rewardSequence = useRef(0);
+  const balanceRef = useRef<HTMLElement>(null);
+  const rewardRef = useRef<HTMLDivElement>(null);
   const wheelMs = reduced ? 100 : 3400;
   const stealMs = reduced ? 100 : 2600;
   const liveBoard = useMemo(() => leaderboard(ids, game.rows, game.dbSeason), [game.rows, game.dbSeason]);
@@ -131,16 +136,22 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
       else { text = w.kind === "steal" ? t("cap_stealNone") : t("cap_boomNone"); good = false; icon = "🌊"; }
     }
     setCaption({ text, good, icon });
+    const earnsGold = res.applied && res.amount > 0 && (w.kind === "win" || w.kind === "shield" || (w.kind === "steal" && res.outcome === "hit"));
+    setReward(earnsGold ? { id: ++rewardSequence.current, amount: res.amount, detail: w.kind === "win" ? say("金币已入账", "ADDED TO YOUR TREASURE") : text } : null);
     setFrozen(null);
     setPhase("landed");
     chime(good ? "win" : "miss");
   }
 
   async function reveal(res: SpinResult, index: number) {
-    if (res.applied && res.victim) {
-      setImpact(res);
+    const kind = WEDGES[index].kind;
+    if (res.applied && (res.victim || kind === "shield" || kind === "spins")) {
+      setEffect({
+        kind: res.outcome === "blocked" ? "blocked" : res.outcome === "reflected" ? "mirror" : kind === "steal" ? "steal" : kind === "shield" ? "shield" : kind === "spins" ? "spins" : "bomb",
+        target: res.victim ? who(res.victim) : undefined, amount: res.amount, shieldFull: kind === "shield" && res.amount > 0,
+      });
       setPhase("impact");
-      await wait(reduced ? 100 : 850);
+      await wait(reduced ? 100 : 1300);
     }
     if (alive.current) land(res, index);
   }
@@ -150,7 +161,7 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
     lock.current = true; setBusy(true);
     const index = pickWedge(Math.random), w = WEDGES[index];
     const snapshot = { mine: game.mine, board: liveBoard, events: liveEvents };
-    setFrozen(snapshot); setCaption(null); setSteal(null); setImpact(null); setWedge(index);
+    setFrozen(snapshot); setCaption(null); setReward(null); setSteal(null); setEffect(null);
     setRotation((previous) => nextWheelRotation(previous, index, WEDGES.length));
     setPhase("spinning"); chime("spin");
     try {
@@ -163,7 +174,7 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
         setPhase("stealing"); chime("spin");
         await wait(stealMs + 100);
         if (alive.current) await reveal(res, index);
-      } else land(res, index);
+      } else await reveal(res, index);
     } catch {
       if (alive.current) land({ applied: false, victim: null, amount: 0, outcome: null }, index);
     } finally {
@@ -176,7 +187,6 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
   async function boom(victim: string | null) {
     if (lock.current) return;
     lock.current = true; setBusy(true);
-    setWedge(boomIndex);
     setFrozen({ mine: game.mine, board: liveBoard, events: liveEvents });
     try {
       const res = await game.boomPick(victim);
@@ -226,7 +236,6 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
 
   const resolving = phase === "spinning" || phase === "stealing" || phase === "impact";
   const canSpin = !busy && !loading && game.online && left > 0 && !ended && phase !== "pick";
-  const resultIcon = impact?.outcome === "blocked" ? "🛡️" : impact?.outcome === "reflected" ? "🪞" : wedge === boomIndex ? "💥" : "🪙";
   const panelTitle = order ? (order.kind === "trade" ? say("用盾牌换镜子？", "Trade shields for a mirror?") : say("购买镜子？", "Buy a mirror?"))
     : panel === "defend" ? say("守护你的宝藏", "Protect your treasure") : panel === "crew" ? t("leaderboard") : t("howToPlay");
 
@@ -246,7 +255,7 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
 
         <section className="pirate-hud" aria-label={say("你的宝藏", "Your treasure")}>
           <div className="pirate-player">{person && <Avatar person={person} size={36} />}<span>{person && p(person)}<small>{say("船长", "CAPTAIN")}</small></span></div>
-          <div className="pirate-balance"><small>{say("你的金币", "YOUR GOLD")}</small><strong key={mine?.gold} className={!resolving ? "pirate-balance-update" : ""}>🪙 {loading ? "—" : (mine?.gold ?? 1000).toLocaleString()}</strong></div>
+          <div className="pirate-balance"><small>{say("你的金币", "YOUR GOLD")}</small><strong ref={balanceRef}>🪙 {loading ? "—" : <AnimatedGold value={mine?.gold ?? 1000} reduced={reduced} />}</strong></div>
           <button className="pirate-defense-summary" disabled={busy} onClick={() => { openPanel("defend"); setHelp(false); }} aria-label={say("查看盾牌和镜子", "View shields and mirror")}>
             <span>{Array.from({ length: MAX_SHIELDS }, (_, i) => <span key={i} className={i < (mine?.shields ?? 0) ? "" : "pirate-shield-empty"}>🛡️</span>)}<span className={mine?.mirror ? "" : "pirate-shield-empty"}>🪞</span></span><small>{say("防御装备", "DEFENSE")} ›</small>
           </button>
@@ -258,7 +267,7 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
             <h2>{phase === "stealing" ? say("寻找你的目标", "The stealing wheel") : phase === "pick" ? say("选择你的目标", "Choose your target") : ended ? t("gameOver") : say("幸运转盘", "Wheel of fortune")}</h2>
           </div>
 
-          <div className="pirate-stage" aria-busy={resolving}>
+          <div className={"pirate-stage" + (phase === "impact" ? " pirate-stage-effect" : "")} aria-busy={resolving}>
             {phase === "stealing" && steal ? <StealWheel candidates={steal.candidates} victim={steal.victim} duration={stealMs} today={today} label={say("正在旋转目标转盘", "Target wheel spinning")} />
               : <PirateWheel rotation={rotation} duration={wheelMs} today={today} label={say("幸运转盘，十格机会相同", "Lucky wheel, ten equally likely wedges")} />}
             {phase === "pick" && <div className="pirate-target-picker">
@@ -266,17 +275,20 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
               <div className="pirate-targets">{targets.map((v) => <button key={v.id} disabled={busy || v.boomedToday} onClick={() => boom(v.id)}><Avatar person={who(v.id)} size={36} /><span>{name(v.id)}<small>{v.boomedToday ? t("boomedToday") : v.gold.toLocaleString() + " 🪙"}</small></span><span className="pirate-target-mark">⊕</span></button>)}</div>
               {targets.every((v) => v.boomedToday) && <button className="pirate-gold-button" disabled={busy} onClick={() => boom(null)}>{t("cap_boomNone")}</button>}
             </div>}
-            {phase === "impact" && impact?.victim && <div className={"pirate-impact pirate-impact-" + impact.outcome}><Avatar person={who(impact.victim)} size={82} /><span className="pirate-impact-icon">{resultIcon}</span><strong>{name(impact.victim)}</strong></div>}
+            {phase === "impact" && effect && <PirateEffects effect={effect} />}
           </div>
 
           <div className="pirate-result-slot" role="status" aria-live="polite" aria-atomic="true">
             {loading ? <p className="pirate-soft-text">{say("正在装载宝藏…", "Loading your treasure…")}</p>
               : !game.online ? <div className="pirate-connection"><span>📡 {t("needsSignal")}</span><button onClick={() => game.open()}>{say("重试", "Retry")}</button></div>
-              : phase === "landed" && caption ? <div className={"pirate-result " + (caption.good ? "pirate-result-good" : "pirate-result-bad")}><span>{caption.icon}</span><strong>{caption.text}</strong>{caption.good && <div className="pirate-sparkles" aria-hidden="true">✦ <span>✦</span> ✧</div>}</div>
+              : phase === "landed" && caption ? <div ref={rewardRef} className={"pirate-result " + (reward ? "pirate-result-coins " : "") + (caption.good ? "pirate-result-good" : "pirate-result-bad")}>
+                {reward ? <><strong key={reward.id} className="pirate-reward-amount">🪙 +<AnimatedGold value={reward.amount} from={0} reduced={reduced} /></strong><small>{reward.detail}</small></> : <><span>{caption.icon}</span><strong>{caption.text}</strong></>}
+                {caption.good && <div className="pirate-sparkles" aria-hidden="true">✦ <span>✦</span> ✧</div>}
+              </div>
               : phase === "spinning" ? <p className="pirate-soft-text">{say("好运正在转动…", "A little luck is on its way…")}</p>
               : phase === "stealing" ? <p className="pirate-soft-text">{say("转盘决定目标，不会额外消耗次数", "Finding your target · no extra spin used")}</p>
-              : phase === "impact" ? <p className="pirate-soft-text">{say("宝藏争夺战！", "A clash over treasure!")}</p>
-              : phase === "pick" ? <p className="pirate-soft-text">{say("炸掉 20% 金币，每人每天最多一次", "Destroy 20% of their gold · once per target per day")}</p>
+              : phase === "impact" ? <p className="pirate-soft-text">{effect?.kind === "shield" ? say("守护宝藏，准备就绪", "A little extra protection for your treasure") : effect?.kind === "spins" ? say("好运还没结束！", "Your adventure isn't over yet!") : say("宝藏争夺战！", "A clash over treasure!")}</p>
+              : phase === "pick" ? <p className="pirate-soft-text">{say("炸掉 20% 金币，全家合计每人每天只能被炸一次", "Destroy 20% of their gold · one bomb per target per day across the family")}</p>
               : ended ? <p className="pirate-champion">👑 {board.filter((x) => x.leader).map((x) => name(x.id)).join(" & ")}</p>
               : <p className="pirate-soft-text">{dayMultiplier(today) > 1 ? t("prizesToday", { m: dayMultiplier(today).toFixed(1) }) : say("每一格都有 10% 机会，好运属于每个人", "Every wedge has a 10% chance. Fair winds for everyone.")}</p>}
           </div>
@@ -295,6 +307,8 @@ export default function PirateSheet({ onClose }: { onClose: () => void }) {
           <button disabled={busy} onClick={() => openPanel("rules")}><BookOpen size={23} />{say("玩法", "RULES")}</button>
         </nav>
       </div>
+
+      {reward && phase === "landed" && <CoinCollection key={reward.id} origin={rewardRef} destination={balanceRef} reduced={reduced} />}
 
       {panel && <GameDialog title={panelTitle} busy={busy} onClose={() => { setPanel(null); setOrder(null); }} closeLabel={say("关闭", "Close")}>
         {order ? <div className="pirate-mirror-confirm">
@@ -343,7 +357,7 @@ function GameDialog({ title, busy, onClose, closeLabel, children }: { title: str
 const RULES = [
   { zh: "大家从 1,000 金币开始。每天早上（爱尔兰时间）多 5 次转盘，没用完的会留着。", en: "Everyone starts with 1,000 gold. Every Irish morning you get 5 more spins; unused ones carry over." },
   { zh: "转盘 10 格，每格机会一样：💰 50 / 100 / 150 / 200 / 300 / 500 直接进口袋，而且奖金每天变大（第 14 天 ×3）。", en: "Ten equal wedges: 💰 50 / 100 / 150 / 200 / 300 / 500 go straight into your gold, and prizes grow every day (×3 on Day 14)." },
-  { zh: "🏴‍☠️ 偷：随机偷一个人 15% 的金币（最后一名偷不到）。💣 炸：你选一个人，他损失 20%（炸掉，不归你）；每人每天只能被炸一次。", en: "🏴‍☠️ Steal takes 15% from a random person (never the one in last place). 💣 Boom: you pick someone, they lose 20% (destroyed, not yours); each person can only be boomed once a day." },
+  { zh: "🏴‍☠️ 偷：随机偷一个人 15% 的金币（最后一名偷不到）。💣 炸：你选一个人，他损失 20%（炸掉，不归你）；全家合计，每人每天只能被炸一次，盾牌挡住或镜子反弹也算；爱尔兰午夜重置。", en: "🏴‍☠️ Steal takes 15% from a random person (never the one in last place). 💣 Boom: you pick someone, they lose 20% (destroyed, not yours); each target can receive one bomb per day across the whole family, even if blocked or reflected. Resets at midnight in Ireland." },
   { zh: `🛡️ 盾牌：挡一次攻击，最多 ${MAX_SHIELDS} 块，别人看不到你有几块。🎰 多 3 次转盘。`, en: `🛡️ Shield blocks one attack, up to ${MAX_SHIELDS}, hidden from others. 🎰 gives +3 spins.` },
   { zh: "🪞 镜子（最多一面）：优先于盾牌，挡下下一次攻击并反弹同样伤害，用后消失。两块盾牌悄悄换一面，或花 20% 金币买一面（大家都会看到）。", en: "🪞 Mirror (max one): activates before shields, blocks the next attack and sends the same hit back, then is used up. Trade two shields for one quietly, or buy one for 20% of your gold, minimum 200 (everyone sees that)." },
   { zh: `10月25日第 1 天大家重新从 1,000 开始，第 ${DAYS} 天（11月7日）结束，最多的人是海盗王 👑`, en: `Day 1 (25 Oct) everyone restarts at 1,000; after Day ${DAYS} (7 Nov) the richest is Pirate King 👑` },
