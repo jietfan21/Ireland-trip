@@ -4,7 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 export const metadata: Metadata = {
   title: "爱尔兰之旅 · Ireland Trip",
-  description: "范家 13 天爱尔兰自驾 · Fan family 13-day Ireland road trip",
+  description: "潘家 13 天爱尔兰自驾 · Fan family 13-day Ireland road trip",
   manifest: "/manifest.webmanifest?v=family-1",
   appleWebApp: { capable: true, title: "Ireland", statusBarStyle: "default" },
   icons: {
