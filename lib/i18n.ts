@@ -72,7 +72,6 @@ export const ui = {
   yourShields: { zh: "你的防御（只有你看得到）", en: "Your defence (only you see this)" },
   exchange: { zh: "🛡️🛡️ → 🪞 换镜子", en: "🛡️🛡️ → 🪞 Exchange" },
   buyMirror: { zh: "🪞 买镜子 −{n}", en: "🪞 Buy mirror −{n}" },
-  boomedToday: { zh: "今天已被炸过", en: "boomed today" },
   prizesToday: { zh: "今天的奖金 ×{m}", en: "Today's prizes ×{m}" },
   needsSignal: { zh: "需要网络信号才能玩，稍后再试", en: "Needs signal to play — try again in a bit" },
   leaderboard: { zh: "排行榜", en: "Leaderboard" },
