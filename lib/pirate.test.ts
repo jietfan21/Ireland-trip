@@ -50,10 +50,10 @@ test("coin wedges grow with the trip day; practice is ×1", () => {
   assert.equal(coinValue(150, "2026-10-25"), 170); // 171.4 → nearest 10
 });
 
-test("mirror price is 20% of gold, at least 200", () => {
-  assert.equal(mirrorPrice(1000), 200);
-  assert.equal(mirrorPrice(6234), 1240);
-  assert.equal(mirrorPrice(300), 200);
+test("mirror price is 30% of gold, at least 300", () => {
+  assert.equal(mirrorPrice(1000), 300);
+  assert.equal(mirrorPrice(6234), 1870);
+  assert.equal(mirrorPrice(500), 300);
 });
 
 test("hitAmount: percent of gold, floored to tens", () => {
@@ -92,9 +92,9 @@ test("leaderboard: missing and old-season rows are 1000; ties share the crown", 
   );
 });
 
-test("boom victims: everyone but me with gold, flagged if already boomed today, no shield info", () => {
-  const v = victims("mom", ["dad", "mom", "yao", "jiet"], rows, "trip", "2026-10-25");
-  assert.deepEqual(v, [{ id: "dad", gold: 1300, boomedToday: true }, { id: "yao", gold: 1000, boomedToday: false }]);
+test("boom victims: everyone but me with gold, even if already boomed today, no shield info", () => {
+  const v = victims("mom", ["dad", "mom", "yao", "jiet"], rows, "trip");
+  assert.deepEqual(v, [{ id: "dad", gold: 1300 }, { id: "yao", gold: 1000 }]);
 });
 
 test("event text covers every kind", () => {

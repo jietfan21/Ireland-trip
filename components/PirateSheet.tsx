@@ -92,7 +92,7 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
   const { mine, board, events } = view;
   const left = mine?.spins ?? 0;
   const price = mirrorPrice(game.mine?.gold ?? 0);
-  const targets = useMemo(() => me ? victims(me, ids, game.rows, game.dbSeason, today) : [], [me, game.rows, game.dbSeason, today]);
+  const targets = useMemo(() => me ? victims(me, ids, game.rows, game.dbSeason) : [], [me, game.rows, game.dbSeason]);
   const name = (id: string) => { const person = people.find((x) => x.id === id); return person ? p(person) : id; };
   const loading = !game.ready || (game.online && game.season !== "over" && !game.mine);
   const ended = game.season === "over";
@@ -304,8 +304,8 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
               : <PirateWheel rotation={rotation} duration={wheelMs} today={today} label={say("幸运转盘，十格机会相同", "Lucky wheel, ten equally likely wedges")} />}
             {phase === "pick" && <div className="pirate-target-picker">
               <div className="pirate-target-top"><span>💣</span><p>{t("pickBoom")}</p></div>
-              <div className="pirate-targets">{targets.map((v) => <button key={v.id} disabled={busy || v.boomedToday} onClick={() => boom(v.id)}><Avatar person={who(v.id)} size={36} /><span>{name(v.id)}<small>{v.boomedToday ? t("boomedToday") : v.gold.toLocaleString() + " 🪙"}</small></span><span className="pirate-target-mark">⊕</span></button>)}</div>
-              {targets.every((v) => v.boomedToday) && <button className="pirate-gold-button" disabled={busy} onClick={() => boom(null)}>{t("cap_boomNone")}</button>}
+              <div className="pirate-targets">{targets.map((v) => <button key={v.id} disabled={busy} onClick={() => boom(v.id)}><Avatar person={who(v.id)} size={36} /><span>{name(v.id)}<small>{v.gold.toLocaleString() + " 🪙"}</small></span><span className="pirate-target-mark">⊕</span></button>)}</div>
+              {targets.length === 0 && <button className="pirate-gold-button" disabled={busy} onClick={() => boom(null)}>{t("cap_boomNone")}</button>}
             </div>}
             {phase === "impact" && effect && <PirateEffects effect={effect} />}
           </div>
@@ -320,7 +320,7 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
               : phase === "spinning" ? <p className="pirate-soft-text">{say("好运正在转动…", "A little luck is on its way…")}</p>
               : phase === "stealing" ? <p className="pirate-soft-text">{say("转盘决定目标，不会额外消耗次数", "Finding your target · no extra spin used")}</p>
               : phase === "impact" ? <p className="pirate-soft-text">{effect?.kind === "shield" ? say("守护宝藏，准备就绪", "A little extra protection for your treasure") : effect?.kind === "spins" ? say("好运还没结束！", "Your adventure isn't over yet!") : say("宝藏争夺战！", "A clash over treasure!")}</p>
-              : phase === "pick" ? <p className="pirate-soft-text">{say("炸掉 20% 金币，全家合计每人每天只能被炸一次", "Destroy 20% of their gold · one bomb per target per day across the family")}</p>
+              : phase === "pick" ? <p className="pirate-soft-text">{say("炸掉 20% 金币，不限次数", "Destroy 20% of their gold · no daily limit")}</p>
               : ended ? <p className="pirate-champion">👑 {board.filter((x) => x.leader).map((x) => name(x.id)).join(" & ")}</p>
               : dayMultiplier(today) > 1 ? <p className="pirate-soft-text">{t("prizesToday", { m: dayMultiplier(today).toFixed(1) })}</p> : null}
           </div>
@@ -360,7 +360,7 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
             <p>{say("🪞 镜子优先于盾牌，自动挡下并反弹下一次偷窃或炸弹，然后消失。最多持有一面。", "🪞 A mirror activates before your shields. It blocks and reflects the next steal or bomb, then disappears. You can hold one.")}</p>
             <p>{say("🏴‍☠️ 被偷时：攻击者反而把同样数量的金币付给你。💣 被炸时：攻击者自己损失金币。反弹金额不超过攻击者的余额。", "🏴‍☠️ Steal: the attacker pays you instead. 💣 Bomb: the attacker loses their own gold. Reflected damage is capped at the attacker's balance.")}</p>
             <p>{say("🛡️ 每块盾牌只挡一次攻击，不会反弹。镜子使用后，你的盾牌仍然保留。", "🛡️ Each shield blocks one attack without reflecting it. A mirror leaves your shields untouched.")}</p>
-            <p>{say("兑换消耗两块盾牌；金币价格为余额的 20%（向下取整到十位），最低 200。金币购买为公开动态，盾牌兑换为私密动态。", "Trade costs two shields. Gold price is 20% of your balance, rounded down to tens, minimum 200. Gold purchases are public in the feed; shield trades are private.")}</p>
+            <p>{say("兑换消耗两块盾牌；金币价格为余额的 30%（向下取整到十位），最低 300。金币购买为公开动态，盾牌兑换为私密动态。", "Trade costs two shields. Gold price is 30% of your balance, rounded down to tens, minimum 300. Gold purchases are public in the feed; shield trades are private.")}</p>
           </div>}
           {notice && <p role="status" className="pirate-notice">{notice}</p>}
           {game.mine?.mirror ? <div className="pirate-equipped">✦ {say("镜子已装备，下一次攻击会被反弹", "Mirror armed. The next attack bounces back.")}</div> : <>
@@ -386,9 +386,9 @@ function GameDialog({ title, busy, onClose, closeLabel, children }: { title: str
 const RULES = [
   { zh: "大家从 1,000 金币开始。每天早上（爱尔兰时间）多 5 次转盘，没用完的会留着。", en: "Everyone starts with 1,000 gold. Every Irish morning you get 5 more spins; unused ones carry over." },
   { zh: "转盘 10 格，每格机会一样：💰 50 / 100 / 150 / 200 / 300 / 500 直接进口袋，而且奖金每天变大（第 14 天 ×3）。", en: "Ten equal wedges: 💰 50 / 100 / 150 / 200 / 300 / 500 go straight into your gold, and prizes grow every day (×3 on Day 14)." },
-  { zh: "🏴‍☠️ 偷：随机偷一个人 15% 的金币（最后一名偷不到）。💣 炸：你选一个人，他损失 20%（炸掉，不归你）；全家合计，每人每天只能被炸一次，盾牌挡住或镜子反弹也算；爱尔兰午夜重置。", en: "🏴‍☠️ Steal takes 15% from a random person (never the one in last place). 💣 Boom: you pick someone, they lose 20% (destroyed, not yours); each target can receive one bomb per day across the whole family, even if blocked or reflected. Resets at midnight in Ireland." },
+  { zh: "🏴‍☠️ 偷：随机偷一个人 15% 的金币（最后一名偷不到）。💣 炸：你选一个人，他损失 20%（炸掉，不归你）；同一个人可以被炸多次，没有每日限制。", en: "🏴‍☠️ Steal takes 15% from a random person (never the one in last place). 💣 Boom: you pick someone, they lose 20% (destroyed, not yours); the same person can be bombed any number of times." },
   { zh: `🛡️ 盾牌：挡一次攻击，最多 ${MAX_SHIELDS} 块，别人看不到你有几块。🎰 多 3 次转盘。`, en: `🛡️ Shield blocks one attack, up to ${MAX_SHIELDS}, hidden from others. 🎰 gives +3 spins.` },
-  { zh: "🪞 镜子（最多一面）：优先于盾牌，挡下下一次攻击并反弹同样伤害，用后消失。两块盾牌悄悄换一面，或花 20% 金币买一面（大家都会看到）。", en: "🪞 Mirror (max one): activates before shields, blocks the next attack and sends the same hit back, then is used up. Trade two shields for one quietly, or buy one for 20% of your gold, minimum 200 (everyone sees that)." },
+  { zh: "🪞 镜子（最多一面）：优先于盾牌，挡下下一次攻击并反弹同样伤害，用后消失。两块盾牌悄悄换一面，或花 30% 金币买一面，最低 300（大家都会看到）。", en: "🪞 Mirror (max one): activates before shields, blocks the next attack and sends the same hit back, then is used up. Trade two shields for one quietly, or buy one for 30% of your gold, minimum 300 (everyone sees that)." },
   { zh: `10月25日第 1 天大家重新从 1,000 开始，第 ${DAYS} 天（11月7日）结束，最多的人是海盗王 👑`, en: `Day 1 (25 Oct) everyone restarts at 1,000; after Day ${DAYS} (7 Nov) the richest is Pirate King 👑` },
 ];
 

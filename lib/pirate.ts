@@ -37,9 +37,11 @@ export function dayMultiplier(day: string): number {
 export function coinValue(base: number, day: string): number {
   return Math.round((base * dayMultiplier(day)) / 10) * 10;
 }
-// A mirror costs 20% of your gold, at least 200 (mirrors pirate_buy_mirror in SQL).
+// A mirror costs 30% of your gold, at least 300 (mirrors pirate_buy_mirror in SQL).
+export const MIRROR_PCT = 30;
+export const MIRROR_MIN = 300;
 export function mirrorPrice(gold: number): number {
-  return Math.max(200, hitAmount(gold, BOOM_PCT));
+  return Math.max(MIRROR_MIN, hitAmount(gold, MIRROR_PCT));
 }
 
 // Uniform pick: the wheel is honest, every wedge is 10%.
@@ -94,7 +96,7 @@ export type PlayerRow = {
   mirror: boolean;
   spins: number;
   boom_pending: boolean; // a 💣 was spun (spin used) but the victim not yet chosen
-  boomed_day: string | null; // last Dublin day this player was boomed: one boom per person per day
+  boomed_day: string | null; // last Dublin day this player was boomed (informational; no daily limit)
   day: string;
   season: string;
 };
@@ -112,13 +114,13 @@ export function leaderboard(ids: string[], rows: PlayerRow[], season: string) {
   return list;
 }
 
-// Boom targets: everyone but me who has gold, flagged if already boomed today. Shields stay hidden.
-export function victims(me: string, ids: string[], rows: PlayerRow[], season: string, today: string) {
+// Boom targets: everyone but me who has gold. No daily limit. Shields stay hidden.
+export function victims(me: string, ids: string[], rows: PlayerRow[], season: string) {
   return ids
     .filter((id) => id !== me)
     .map((id) => {
       const r = current(rows, season, id);
-      return { id, gold: r?.gold ?? START_GOLD, boomedToday: r?.boomed_day === today };
+      return { id, gold: r?.gold ?? START_GOLD };
     })
     .filter((v) => v.gold > 0);
 }

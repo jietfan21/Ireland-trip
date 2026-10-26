@@ -27,7 +27,7 @@ create table public.pirate_players (
   mirror boolean not null default false,   -- at most one, hidden from others
   spins int not null default 5,            -- balance: +5 per Dublin day, +3 from the wedge, no cap
   boom_pending boolean not null default false, -- a 💣 was spun (spin used), victim not chosen yet
-  boomed_day text,                         -- last Dublin day this player was boomed (one boom per person per day)
+  boomed_day text,                         -- last Dublin day this player was boomed (informational; no daily limit)
   day text not null,                       -- last Dublin day (YYYY-MM-DD) spins were credited for
   season text not null,                    -- 'practice' | 'trip'
   updated_at timestamptz not null default now()
@@ -331,13 +331,11 @@ begin
   if not r.boom_pending then
     return jsonb_build_object('applied', false, 'reason', 'no boom pending', 'row', to_jsonb(r));
   end if;
-  if v.id is not null and v.boomed_day = p_day then
-    return jsonb_build_object('applied', false, 'reason', 'already boomed today', 'row', to_jsonb(r));
-  end if;
+  -- No daily limit: the same person can be boomed any number of times a day.
   if p_victim is null then
     -- "Nobody to boom" is only allowed when it's true.
     select count(*) into n from pirate_players p
-      where p.id <> p_player and p.season = v_season and pirate_hit(p.gold, 20) > 0 and coalesce(p.boomed_day, '') <> p_day;
+      where p.id <> p_player and p.season = v_season and pirate_hit(p.gold, 20) > 0;
     if n > 0 or exists (
       select 1 from unnest(array['dad', 'mom', 'rong', 'yao', 'jiet', 'ying', 'hui']) c
       where c <> p_player and not exists (select 1 from pirate_players p where p.id = c and p.season = v_season)
@@ -353,7 +351,7 @@ exception when unique_violation then
   return pirate_replay(p_player, p_turn_key);
 end $$;
 
--- Buy a mirror for 20% of your gold (at least 200). Public: everyone sees it in the feed.
+-- Buy a mirror for 30% of your gold (at least 300). Public: everyone sees it in the feed.
 create or replace function public.pirate_buy_mirror(p_player text, p_day text, p_turn_key text)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -372,7 +370,7 @@ begin
   r := pirate_open(p_player, v_season, p_day);
   if p_day < r.day then p_day := r.day; v_season := r.season; end if;
   if r.mirror then return jsonb_build_object('applied', false, 'reason', 'mirror held', 'row', to_jsonb(r)); end if;
-  price := greatest(200, pirate_hit(r.gold, 20));
+  price := greatest(300, pirate_hit(r.gold, 30));
   if r.gold < price then return jsonb_build_object('applied', false, 'reason', 'not enough gold', 'row', to_jsonb(r)); end if;
   update pirate_players set gold = gold - price, mirror = true, updated_at = now() where id = p_player returning * into r;
   insert into pirate_events (season, day, actor, kind, amount, turn_key) values (v_season, p_day, p_player, 'mirror_bought', price, p_turn_key);
