@@ -88,7 +88,7 @@ export default function DayView({ day, weather }: { day: Day; weather: Weather }
             const pl = s.place ? places[s.place] : undefined;
             return (
               <li key={i} className="relative flex gap-3 pb-4 last:pb-0">
-                <div className="flex w-14 shrink-0 flex-col items-center">
+                <div className={`flex shrink-0 flex-col items-center ${s.t?.includes("–") ? "w-24" : "w-14"}`}>
                   <span className="rounded-full px-2 py-0.5 text-[13px] font-bold text-white" style={{ background: day.color }}>
                     {s.t === "eve" ? t("eve") : s.t}
                   </span>
