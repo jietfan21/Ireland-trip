@@ -27,50 +27,50 @@ export const people: Person[] = [
 export type Place = { zh: string; en: string; lat: number; lng: number; q?: string };
 
 export const places: Record<string, Place> = {
-  airport: { zh: "都柏林机场", en: "Dublin Airport", lat: 53.4213, lng: -6.2701 },
+  airport: { zh: "都柏林机场", en: "Dublin Airport", lat: 53.4213, lng: -6.2701, q: "Dublin Airport, County Dublin, Ireland" },
   rong: { zh: "容的住处（邓多克）", en: "Rong's place (Dundalk)", lat: 54.0, lng: -6.405, q: "37 Rockfield Court, Dundalk A91 Y7N6" },
-  howth: { zh: "霍斯渔港", en: "Howth Harbour", lat: 53.3892, lng: -6.0653 },
-  phoenix: { zh: "凤凰公园（看鹿）", en: "Phoenix Park (deer)", lat: 53.36, lng: -6.329 },
-  trinity: { zh: "圣三一学院", en: "Trinity College", lat: 53.3438, lng: -6.2546 },
-  hapenny: { zh: "半便士桥", en: "Ha'penny Bridge", lat: 53.3464, lng: -6.2631 },
-  templebar: { zh: "圣殿酒吧区", en: "Temple Bar", lat: 53.3455, lng: -6.2643 },
-  arcade: { zh: "乔治街拱廊市场", en: "George's Street Arcade", lat: 53.3426, lng: -6.2652 },
-  stephens: { zh: "圣史蒂芬绿地", en: "St Stephen's Green", lat: 53.337, lng: -6.2591 },
-  grafton: { zh: "格拉夫顿街", en: "Grafton Street", lat: 53.3416, lng: -6.26 },
-  cityhall: { zh: "贝尔法斯特市政厅", en: "Belfast City Hall", lat: 54.5965, lng: -5.9301 },
-  cathedral: { zh: "大教堂区", en: "Cathedral Quarter", lat: 54.603, lng: -5.9272 },
-  titanic: { zh: "泰坦尼克号博物馆", en: "Titanic Belfast", lat: 54.6083, lng: -5.9096 },
-  peace: { zh: "和平墙与壁画", en: "Peace Walls & murals", lat: 54.6019, lng: -5.9621 },
-  dark: { zh: "黑暗树篱", en: "The Dark Hedges", lat: 55.1351, lng: -6.3795 },
-  dunluce: { zh: "邓卢斯城堡", en: "Dunluce Castle", lat: 55.2104, lng: -6.5792 },
-  giants: { zh: "巨人堤道", en: "Giant's Causeway", lat: 55.2408, lng: -6.5116 },
-  walls: { zh: "德里古城墙", en: "Derry City Walls", lat: 54.996, lng: -7.321 },
-  donegal: { zh: "多尼戈尔镇", en: "Donegal Town", lat: 54.6538, lng: -8.1096 },
-  drumcliffe: { zh: "德拉姆克利夫（叶芝墓）", en: "Drumcliffe (Yeats' grave)", lat: 54.3255, lng: -8.4926 },
+  howth: { zh: "霍斯渔港", en: "Howth Harbour", lat: 53.3892, lng: -6.0653, q: "Howth Harbour, Howth, Dublin, Ireland" },
+  phoenix: { zh: "凤凰公园（看鹿）", en: "Phoenix Park (deer)", lat: 53.36, lng: -6.329, q: "Phoenix Park, Dublin, Ireland" },
+  trinity: { zh: "圣三一学院", en: "Trinity College", lat: 53.3438, lng: -6.2546, q: "Trinity College Dublin, College Green, Dublin, Ireland" },
+  hapenny: { zh: "半便士桥", en: "Ha'penny Bridge", lat: 53.3464, lng: -6.2631, q: "Ha'penny Bridge, Dublin, Ireland" },
+  templebar: { zh: "圣殿酒吧区", en: "Temple Bar", lat: 53.3455, lng: -6.2643, q: "Temple Bar, Dublin, Ireland" },
+  arcade: { zh: "乔治街拱廊市场", en: "George's Street Arcade", lat: 53.3426, lng: -6.2652, q: "George's Street Arcade, Dublin, Ireland" },
+  stephens: { zh: "圣史蒂芬绿地", en: "St Stephen's Green", lat: 53.337, lng: -6.2591, q: "St Stephen's Green, Dublin, Ireland" },
+  grafton: { zh: "格拉夫顿街", en: "Grafton Street", lat: 53.3416, lng: -6.26, q: "Grafton Street, Dublin, Ireland" },
+  cityhall: { zh: "贝尔法斯特市政厅", en: "Belfast City Hall", lat: 54.5965, lng: -5.9301, q: "Belfast City Hall, Belfast, Northern Ireland" },
+  cathedral: { zh: "大教堂区", en: "Cathedral Quarter", lat: 54.603, lng: -5.9272, q: "Cathedral Quarter, Belfast, Northern Ireland" },
+  titanic: { zh: "泰坦尼克号博物馆", en: "Titanic Belfast", lat: 54.6083, lng: -5.9096, q: "Titanic Belfast, Queen's Road, Belfast, Northern Ireland" },
+  peace: { zh: "和平墙与壁画", en: "Peace Walls & murals", lat: 54.6019, lng: -5.9621, q: "Belfast Peace Wall, Cupar Way, Belfast, Northern Ireland" },
+  dark: { zh: "黑暗树篱", en: "The Dark Hedges", lat: 55.1351, lng: -6.3795, q: "The Dark Hedges, Bregagh Road, Ballymoney, Northern Ireland" },
+  dunluce: { zh: "邓卢斯城堡", en: "Dunluce Castle", lat: 55.2104, lng: -6.5792, q: "Dunluce Castle, Bushmills, Northern Ireland" },
+  giants: { zh: "巨人堤道", en: "Giant's Causeway", lat: 55.2408, lng: -6.5116, q: "Giant's Causeway, Bushmills, Northern Ireland" },
+  walls: { zh: "德里古城墙", en: "Derry City Walls", lat: 54.996, lng: -7.321, q: "Derry City Walls, Derry, Northern Ireland" },
+  donegal: { zh: "多尼戈尔镇", en: "Donegal Town", lat: 54.6538, lng: -8.1096, q: "Donegal Town, County Donegal, Ireland" },
+  drumcliffe: { zh: "德拉姆克利夫（叶芝墓）", en: "Drumcliffe (Yeats' grave)", lat: 54.3255, lng: -8.4926, q: "Drumcliffe Church, Drumcliffe, County Sligo, Ireland" },
   benbulben: { zh: "本布尔本山森林步道停车场", en: "Benbulben Forest Walk car park", lat: 54.361492, lng: -8.501434, q: "Benbulben Forest Walk, Gortarowey, Co. Sligo" },
   biabao: { zh: "Bia Bao 亚洲餐厅（斯莱戈）", en: "Bia Bao restaurant (Sligo)", lat: 54.27044, lng: -8.47288, q: "Bia Bao, 31 Castle Street, Sligo F91 YX51" },
   supervalu: { zh: "SuperValu Barna 超市", en: "SuperValu Barna supermarket", lat: 53.250491, lng: -9.154625, q: "SuperValu Barna, Seapoint, Barna, Co. Galway" },
-  latin: { zh: "拉丁区", en: "Latin Quarter", lat: 53.2709, lng: -9.0535 },
-  spanish: { zh: "西班牙拱门", en: "Spanish Arch", lat: 53.2695, lng: -9.0549 },
-  salthill: { zh: "索尔特希尔海滨步道", en: "Salthill Promenade", lat: 53.2588, lng: -9.0842 },
+  latin: { zh: "拉丁区", en: "Latin Quarter", lat: 53.2709, lng: -9.0535, q: "Latin Quarter, Quay Street, Galway, Ireland" },
+  spanish: { zh: "西班牙拱门", en: "Spanish Arch", lat: 53.2695, lng: -9.0549, q: "Spanish Arch, Galway, Ireland" },
+  salthill: { zh: "索尔特希尔海滨步道", en: "Salthill Promenade", lat: 53.2588, lng: -9.0842, q: "Salthill Promenade, Salthill, Galway, Ireland" },
   silverstrand: { zh: "银滩（短暂停车拍照）", en: "Silverstrand Beach (photos)", lat: 53.2504, lng: -9.1371, q: "Silverstrand Beach, Barna, Co. Galway" },
   leisureland: { zh: "Salthill Leisureland 停车场", en: "Leisureland Car Park, Salthill", lat: 53.2586, lng: -9.0918, q: "Leisureland Car Park, Salthill, Galway" },
   hynesyard: { zh: "Hynes Yard 市中心停车场", en: "Hynes Yard city car park", lat: 53.2715, lng: -9.0528, q: "Hynes Yard Car Park, Merchants Road, Galway" },
   galwaycathedral: { zh: "戈尔韦大教堂", en: "Galway Cathedral", lat: 53.2757, lng: -9.0591, q: "Galway Cathedral, Gaol Road, Galway" },
   galwaymuseum: { zh: "戈尔韦市立博物馆", en: "Galway City Museum", lat: 53.2690, lng: -9.0539, q: "Galway City Museum, Spanish Parade, Galway" },
-  burren: { zh: "巴伦石灰岩地貌", en: "The Burren", lat: 53.0, lng: -9.05 },
-  moher: { zh: "莫赫悬崖", en: "Cliffs of Moher", lat: 52.9715, lng: -9.4309 },
-  killimer: { zh: "基利默渡轮码头", en: "Killimer ferry", lat: 52.6141, lng: -9.38 },
-  tarbert: { zh: "塔伯特渡轮码头", en: "Tarbert ferry", lat: 52.575, lng: -9.366 },
-  ventry: { zh: "文特里海湾", en: "Ventry", lat: 52.132, lng: -10.364 },
-  slea: { zh: "斯莱角", en: "Slea Head", lat: 52.1008, lng: -10.458 },
-  coumeenoole: { zh: "库米努尔海滩", en: "Coumeenoole Beach", lat: 52.1042, lng: -10.4681 },
-  dunquin: { zh: "邓金码头", en: "Dunquin Pier", lat: 52.13, lng: -10.455 },
-  muckross: { zh: "穆克罗斯庄园", en: "Muckross House", lat: 52.0184, lng: -9.504 },
-  torc: { zh: "托克瀑布", en: "Torc Waterfall", lat: 52.0008, lng: -9.5075 },
-  market: { zh: "科克英国市场", en: "English Market, Cork", lat: 51.8981, lng: -8.4756 },
-  cobh: { zh: "科夫彩色小镇", en: "Cobh", lat: 51.851, lng: -8.2943 },
-  malahide: { zh: "马拉海德", en: "Malahide", lat: 53.4509, lng: -6.1544 },
+  burren: { zh: "巴伦石灰岩地貌", en: "The Burren", lat: 53.0, lng: -9.05, q: "The Burren, County Clare, Ireland" },
+  moher: { zh: "莫赫悬崖", en: "Cliffs of Moher", lat: 52.9715, lng: -9.4309, q: "Cliffs of Moher Visitor Centre, Liscannor, County Clare, Ireland" },
+  killimer: { zh: "基利默渡轮码头", en: "Killimer ferry", lat: 52.6141, lng: -9.38, q: "Killimer Ferry Terminal, Killimer, County Clare, Ireland" },
+  tarbert: { zh: "塔伯特渡轮码头", en: "Tarbert ferry", lat: 52.575, lng: -9.366, q: "Tarbert Ferry Terminal, Tarbert, County Kerry, Ireland" },
+  ventry: { zh: "文特里海湾", en: "Ventry", lat: 52.132, lng: -10.364, q: "Ventry Beach, Ventry, County Kerry, Ireland" },
+  slea: { zh: "斯莱角", en: "Slea Head", lat: 52.1008, lng: -10.458, q: "Slea Head Viewpoint, Dunquin, County Kerry, Ireland" },
+  coumeenoole: { zh: "库米努尔海滩", en: "Coumeenoole Beach", lat: 52.1042, lng: -10.4681, q: "Coumeenoole Beach, Dunquin, County Kerry, Ireland" },
+  dunquin: { zh: "邓金码头", en: "Dunquin Pier", lat: 52.13, lng: -10.455, q: "Dunquin Pier, Dunquin, County Kerry, Ireland" },
+  muckross: { zh: "穆克罗斯庄园", en: "Muckross House", lat: 52.0184, lng: -9.504, q: "Muckross House, Killarney National Park, County Kerry, Ireland" },
+  torc: { zh: "托克瀑布", en: "Torc Waterfall", lat: 52.0008, lng: -9.5075, q: "Torc Waterfall Car Park, Killarney National Park, County Kerry, Ireland" },
+  market: { zh: "科克英国市场", en: "English Market, Cork", lat: 51.8981, lng: -8.4756, q: "English Market, Cork, Ireland" },
+  cobh: { zh: "科夫彩色小镇", en: "Cobh", lat: 51.851, lng: -8.2943, q: "Cobh, County Cork, Ireland" },
+  malahide: { zh: "马拉海德", en: "Malahide", lat: 53.4509, lng: -6.1544, q: "Malahide Village, County Dublin, Ireland" },
 };
 
 export type Stay = {
@@ -742,13 +742,34 @@ export function stayById(id?: string) {
   return stays.find((s) => s.id === id);
 }
 
-export function navUrl(lat: number, lng: number, query?: string) {
-  const dest = query ? encodeURIComponent(query) : `${lat},${lng}`;
-  return `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
+// Keep route geometry in lat/lng, but open recognisable places in Google Maps.
+export function placeQuery(p: Place) {
+  return p.q ?? `${p.en}, Ireland`;
+}
+
+export function googleMapsSearchUrl(query: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+export function placeMapUrl(p: Place) {
+  return googleMapsSearchUrl(placeQuery(p));
+}
+
+export function navUrl(query: string) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}&travelmode=driving`;
+}
+
+export function placeNavUrl(p: Place) {
+  return navUrl(placeQuery(p));
+}
+
+export function stayQuery(s: Stay) {
+  const hotelIds = ["dundalk", "crokepark", "derry", "clayton"];
+  return hotelIds.includes(s.id) ? `${s.name}, ${s.address}` : s.address;
 }
 
 export function stayNavUrl(s: Stay) {
-  return s.approx ? navUrl(s.lat, s.lng, s.address) : navUrl(s.lat, s.lng);
+  return navUrl(stayQuery(s));
 }
 
 export const TRIP_START = "2026-10-24";
