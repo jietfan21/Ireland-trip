@@ -52,7 +52,7 @@ export default function DayView({ day, weather }: { day: Day; weather: Weather }
         />
       </div>
 
-      <FullDayNavigation day={day} />
+      <FullDayNavigation key={day.date} day={day} />
 
       {stay && (
         <Card>
