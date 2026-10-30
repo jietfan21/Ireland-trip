@@ -1,7 +1,7 @@
 "use client";
 
 import { BedDouble, Car, CloudSun, Sunset, TriangleAlert, Wallet } from "lucide-react";
-import { places, stayById, stayNavUrl, navUrl, type Day } from "@/lib/trip";
+import { places, placeMapUrl, stayById, stayNavUrl, type Day } from "@/lib/trip";
 import { sunHHMM } from "@/lib/sun";
 import { weatherIcon, type Weather } from "@/lib/weather";
 import { Card, CallButton, NavButton, fmtDate, useApp } from "./common";
@@ -103,7 +103,7 @@ export default function DayView({ day, weather }: { day: Day; weather: Weather }
                   {s.cost && <p className="mt-1 text-[14px] font-medium text-amber">💶 {p(s.cost)}</p>}
                   {pl && (
                     <a
-                      href={navUrl(pl.lat, pl.lng, pl.q)}
+                      href={placeMapUrl(pl)}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-1.5 inline-flex min-h-11 items-center gap-1 rounded-2xl bg-shamrock-soft px-3 py-2 text-[14px] font-semibold text-shamrock"
