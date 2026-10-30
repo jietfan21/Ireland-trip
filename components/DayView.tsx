@@ -6,6 +6,7 @@ import { sunHHMM } from "@/lib/sun";
 import { weatherIcon, type Weather } from "@/lib/weather";
 import { Card, CallButton, NavButton, fmtDate, useApp } from "./common";
 import FullDayNavigation from "./FullDayNavigation";
+import LunchChoices from "./LunchChoices";
 
 function Tile({ icon, label, value, wide }: { icon: React.ReactNode; label: string; value: string; wide?: boolean }) {
   return (
@@ -126,6 +127,8 @@ export default function DayView({ day, weather }: { day: Day; weather: Weather }
           })}
         </ol>
       </Card>
+
+      {day.lunchOptions && <LunchChoices key={day.date} date={day.date} options={day.lunchOptions} />}
 
       {day.tips.length > 0 && (
         <Card className="bg-[#fffaf0]">
