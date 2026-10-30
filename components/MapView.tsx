@@ -340,7 +340,7 @@ export default function MapView() {
           {p(day.title)} <span className="font-normal text-sub">· {p(day.route)}</span>
         </p>
       )}
-      {day && <div className="shrink-0 px-4 pb-2"><FullDayNavigation day={day} compact /></div>}
+      {day && <div className="shrink-0 px-4 pb-2"><FullDayNavigation key={day.date} day={day} compact /></div>}
       <div className="relative isolate min-h-0 flex-1 overflow-hidden rounded-t-3xl border-t border-line">
         {/* Inline positioning: maplibre's stylesheet would override a utility class here and collapse the height. */}
         <div ref={box} style={{ position: "absolute", inset: 0 }} />
