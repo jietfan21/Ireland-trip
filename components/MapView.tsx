@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Mountain, Pause, Play, Satellite, X } from "
 import { days, navUrl, places, stayById, stayNavUrl, type Day, type L } from "@/lib/trip";
 import { cachedRoute, fetchRoute, type LngLat } from "@/lib/routes";
 import { NavButton, useApp } from "./common";
+import FullDayNavigation from "./FullDayNavigation";
 import { useViewRef, useViewState } from "./ViewMemory";
 
 type Pt = { id: string; lng: number; lat: number; name: L; nav: string; stay: boolean };
@@ -339,6 +340,7 @@ export default function MapView() {
           {p(day.title)} <span className="font-normal text-sub">· {p(day.route)}</span>
         </p>
       )}
+      {day && <div className="shrink-0 px-4 pb-2"><FullDayNavigation day={day} compact /></div>}
       <div className="relative isolate min-h-0 flex-1 overflow-hidden rounded-t-3xl border-t border-line">
         {/* Inline positioning: maplibre's stylesheet would override a utility class here and collapse the height. */}
         <div ref={box} style={{ position: "absolute", inset: 0 }} />
