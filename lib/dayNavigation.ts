@@ -1,13 +1,13 @@
-import { places, stayById, type Day } from "./trip";
+import { placeQuery, places, stayById, stayQuery, type Day } from "./trip";
 
 // Each route URL contains the requested stops in their saved order.
 function stopLocation(id: string): string | null {
   if (id.startsWith("@")) {
     const stay = stayById(id.slice(1));
-    return stay ? (stay.approx ? stay.address : `${stay.lat},${stay.lng}`) : null;
+    return stay ? stayQuery(stay) : null;
   }
   const place = places[id];
-  return place ? (place.q ?? `${place.lat},${place.lng}`) : null;
+  return place ? placeQuery(place) : null;
 }
 
 function directionsUrl(locations: string[], fromCurrentLocation: boolean): string {
