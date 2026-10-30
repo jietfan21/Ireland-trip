@@ -53,6 +53,11 @@ export const places: Record<string, Place> = {
   latin: { zh: "拉丁区", en: "Latin Quarter", lat: 53.2709, lng: -9.0535 },
   spanish: { zh: "西班牙拱门", en: "Spanish Arch", lat: 53.2695, lng: -9.0549 },
   salthill: { zh: "索尔特希尔海滨步道", en: "Salthill Promenade", lat: 53.2588, lng: -9.0842 },
+  silverstrand: { zh: "银滩（短暂停车拍照）", en: "Silverstrand Beach (photos)", lat: 53.2504, lng: -9.1371, q: "Silverstrand Beach, Barna, Co. Galway" },
+  leisureland: { zh: "Salthill Leisureland 停车场", en: "Leisureland Car Park, Salthill", lat: 53.2586, lng: -9.0918, q: "Leisureland Car Park, Salthill, Galway" },
+  hynesyard: { zh: "Hynes Yard 市中心停车场", en: "Hynes Yard city car park", lat: 53.2715, lng: -9.0528, q: "Hynes Yard Car Park, Merchants Road, Galway" },
+  galwaycathedral: { zh: "戈尔韦大教堂", en: "Galway Cathedral", lat: 53.2757, lng: -9.0591, q: "Galway Cathedral, Gaol Road, Galway" },
+  galwaymuseum: { zh: "戈尔韦市立博物馆", en: "Galway City Museum", lat: 53.2690, lng: -9.0539, q: "Galway City Museum, Spanish Parade, Galway" },
   burren: { zh: "巴伦石灰岩地貌", en: "The Burren", lat: 53.0, lng: -9.05 },
   moher: { zh: "莫赫悬崖", en: "Cliffs of Moher", lat: 52.9715, lng: -9.4309 },
   killimer: { zh: "基利默渡轮码头", en: "Killimer ferry", lat: 52.6141, lng: -9.38 },
@@ -239,6 +244,7 @@ export const stays: Stay[] = [
 
 // link: a Google Maps link for places we only have a link for (no map pin).
 export type Step = { t?: string; text: L; place?: string; link?: { label: L; url: string }; cost?: L };
+export type LunchOption = { name: string; food: L; query: string };
 
 export type Day = {
   n: number; // 0 = travel day, 14 = home
@@ -253,6 +259,7 @@ export type Day = {
   steps: Step[];
   tips: L[];
   stops: string[]; // map order
+  lunchOptions?: LunchOption[]; // lunch alternatives, choose one
 };
 
 export const days: Day[] = [
@@ -444,24 +451,44 @@ export const days: Day[] = [
     n: 7,
     date: "2026-10-31",
     color: "#9333ea",
-    title: { zh: "戈尔韦悠闲日 · 万圣夜 🎃", en: "Easy Galway day · Halloween night 🎃" },
-    route: { zh: "拉丁区 · 西班牙拱门 · 海滨", en: "Latin Quarter · Spanish Arch · Salthill" },
-    drive: { zh: "住处到市区约 20 分钟", en: "~20 min from the house to the city" },
+    title: { zh: "戈尔韦海滨 + 老城区 🎃", en: "Galway coast + old town 🎃" },
+    route: { zh: "银滩 → 索尔特希尔 → 市区步行 → 住处", en: "Silverstrand → Salthill → city walk → Airbnb" },
+    drive: { zh: "约 1–1.5 小时驾驶；市区停车一次", en: "~1–1.5 h driving total; park once in the city" },
     currency: "EUR",
     stay: "galway",
     sunAt: [53.27, -9.06],
     steps: [
-      { t: "10:30", text: { zh: "拉丁区鹅卵石街、店铺、街头艺人", en: "Latin Quarter: cobbled streets, shops, buskers" }, place: "latin" },
-      { t: "12:00", text: { zh: "西班牙拱门、河口看天鹅", en: "Spanish Arch & swans at the river mouth" }, place: "spanish" },
-      { t: "14:30", text: { zh: "索尔特希尔海滨长廊吹大西洋海风", en: "Salthill Promenade — Atlantic sea breeze" }, place: "salthill" },
-      { t: "18:00", text: { zh: "晚餐：The King's Head 历史老酒吧", en: "Dinner: The King's Head historic pub" } },
-      { t: "eve", text: { zh: "万圣夜！街上满是装扮的人；Tig Cóilí 或 The Crane Bar 听现场民谣", en: "Halloween night! Costumes everywhere; live trad music at Tig Cóilí or The Crane Bar" } },
+      { t: "09:00", text: { zh: "在 Airbnb 吃早餐，慢慢准备；今晚也住这里", en: "Breakfast at the Airbnb; you're staying here again tonight" } },
+      { t: "10:00", text: { zh: "从 Furbo 住处沿海岸出发", en: "Leave the Furbo Airbnb for the coast and Galway" } },
+      { t: "10:15", text: { zh: "银滩：海景拍照约 20 分钟；若停车场满了就跳过", en: "Silverstrand Beach: ~20 min for photos; skip if the small car park is full" }, place: "silverstrand" },
+      { t: "10:50", text: { zh: "停 Leisureland 停车场，散步去 Salthill 海滨与 Blackrock 跳水塔", en: "Park near Leisureland and stroll Salthill Promenade to Blackrock Diving Tower" }, place: "leisureland" },
+      { t: "11:30", text: { zh: "停 Hynes Yard，市中心景点都步行参观；不用逐点开车", en: "Park once at Hynes Yard, then walk around central Galway" }, place: "hynesyard" },
+      { t: "11:45", text: { zh: "戈尔韦大教堂（若对游客开放）与科里布河", en: "Galway Cathedral (if open to visitors) and River Corrib" }, place: "galwaycathedral" },
+      { t: "12:20", text: { zh: "拉丁区、Shop Street、店铺与街头艺人", en: "Latin Quarter, Shop Street, shops and buskers" }, place: "latin" },
+      { t: "12:45–14:00", text: { zh: "午餐外食：下面七间餐厅任选一间；七人最好先订位", en: "Lunch out: choose ONE of seven restaurants below; reserve for 7 if possible" } },
+      { t: "14:00", text: { zh: "西班牙拱门与海滨拍照", en: "Spanish Arch and waterfront photos" }, place: "spanish" },
+      { t: "14:30", text: { zh: "戈尔韦市立博物馆：下雨天合适，先确认开放", en: "Galway City Museum: good if raining; check opening first" }, place: "galwaymuseum" },
+      { t: "15:30", text: { zh: "咖啡、逛店或短途散步，按天气调整", en: "Coffee, shopping or a final walk, depending on weather" } },
+      { t: "16:15", text: { zh: "回停车场取车，约 20–30 分钟开回住处", en: "Collect car at Hynes Yard and drive ~20–30 min home" }, place: "hynesyard" },
+      { t: "18:00", text: { zh: "在 Airbnb 煮晚餐、休息", en: "Cook dinner and relax at the Airbnb" } },
+    ],
+    lunchOptions: [
+      { name: "The King's Head", food: { zh: "爱尔兰酒吧餐 · 最初首选", en: "Irish pub classics · original first choice" }, query: "The King's Head, High Street, Galway" },
+      { name: "McDonagh's Fish & Chips", food: { zh: "炸鱼薯条 · 可能需要排队", en: "Fish and chips · possible queues" }, query: "McDonagh's Fish and Chips, Quay Street, Galway" },
+      { name: "The Front Door Pub & Brasserie", food: { zh: "酒吧餐 · 适合团体，建议预订", en: "Pub food · good group option, book ahead" }, query: "The Front Door Pub and Brasserie, Galway" },
+      { name: "Brasserie on the Corner", food: { zh: "现代爱尔兰菜、牛排、海鲜", en: "Modern Irish, steak and seafood" }, query: "Brasserie on the Corner, Eglinton Street, Galway" },
+      { name: "Milano", food: { zh: "意式披萨和意粉 · 家庭友好", en: "Pizza and pasta · family-friendly" }, query: "Milano Restaurant, Middle Street, Galway" },
+      { name: "The Quays Bar", food: { zh: "传统酒吧餐 · 拉丁区热闹气氛", en: "Traditional pub food · Latin Quarter atmosphere" }, query: "The Quays Bar, Quay Street, Galway" },
+      { name: "The Skeff Bar & Kitchen", food: { zh: "酒吧餐、三文治 · Eyre Square 附近", en: "Pub food, sandwiches · near Eyre Square" }, query: "The Skeff Bar and Kitchen, Eyre Square, Galway" },
     ],
     tips: [
-      { zh: "周六 + 万圣节人多，没订位就早点去吃晚餐", en: "Saturday + Halloween is busy — no booking, so eat early" },
-      { zh: "Salthill 海边有露天停车场，没有限高问题", en: "Salthill has open-air parking — no height limits" },
+      { zh: "周六万圣节市中心可能繁忙，建议 11:30 停 Hynes Yard；如满位可试 Galway Cathedral Car Park", en: "Halloween Saturday may be busy: park at Hynes Yard around 11:30; Galway Cathedral Car Park is a backup" },
+      { zh: "七座高车或车顶装行李，入多层停车场前确认限高；大教堂停车场为露天", en: "If your seven-seater is tall or has roof luggage, check height barriers; Cathedral parking is outdoors" },
+      { zh: "只选一家午餐餐厅，先确认周六营业与七人的订位情况", en: "Choose one lunch venue and confirm Saturday service/table availability for seven" },
+      { zh: "中午和下午可能下雨：先走海边，雨天转博物馆或咖啡馆", en: "Showers possible around lunch and mid-afternoon: enjoy the coast first, then museum or café if wet" },
+      { zh: "当天 Google Maps 驾车路线只包含停车点；老城区是从 Hynes Yard 步行游览", en: "Google Maps driving route includes car stops only; visit the pedestrian-friendly centre on foot" },
     ],
-    stops: ["@galway", "latin", "spanish", "salthill", "@galway"],
+    stops: ["@galway", "silverstrand", "leisureland", "hynesyard", "@galway"],
   },
   {
     n: 8,
