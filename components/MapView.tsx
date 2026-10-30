@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MLMap, Marker as MLMarker } from "maplibre-gl";
 import { ChevronLeft, ChevronRight, Mountain, Pause, Play, Satellite, X } from "lucide-react";
-import { days, navUrl, places, stayById, stayNavUrl, type Day, type L } from "@/lib/trip";
+import { days, placeNavUrl, places, stayById, stayNavUrl, type Day, type L } from "@/lib/trip";
 import { cachedRoute, fetchRoute, type LngLat } from "@/lib/routes";
 import { NavButton, useApp } from "./common";
 import FullDayNavigation from "./FullDayNavigation";
@@ -18,7 +18,7 @@ function resolve(id: string): Pt | null {
     return s ? { id, lng: s.lng, lat: s.lat, name: s.town, nav: stayNavUrl(s), stay: true } : null;
   }
   const p = places[id];
-  return p ? { id, lng: p.lng, lat: p.lat, name: p, nav: navUrl(p.lat, p.lng, p.q), stay: false } : null;
+  return p ? { id, lng: p.lng, lat: p.lat, name: p, nav: placeNavUrl(p), stay: false } : null;
 }
 
 const tripDays = days.filter((d) => d.stops.length > 0);
