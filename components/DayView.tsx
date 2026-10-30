@@ -5,6 +5,7 @@ import { places, stayById, stayNavUrl, navUrl, type Day } from "@/lib/trip";
 import { sunHHMM } from "@/lib/sun";
 import { weatherIcon, type Weather } from "@/lib/weather";
 import { Card, CallButton, NavButton, fmtDate, useApp } from "./common";
+import FullDayNavigation from "./FullDayNavigation";
 
 function Tile({ icon, label, value, wide }: { icon: React.ReactNode; label: string; value: string; wide?: boolean }) {
   return (
@@ -50,6 +51,8 @@ export default function DayView({ day, weather }: { day: Day; weather: Weather }
           value={weather ? `${weatherIcon(weather.code)} ${weather.min}–${weather.max}°C · ☔ ${weather.rain}%` : "—"}
         />
       </div>
+
+      <FullDayNavigation day={day} />
 
       {stay && (
         <Card>
