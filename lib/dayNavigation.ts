@@ -1,6 +1,6 @@
 import { places, stayById, type Day } from "./trip";
 
-// Each route URL contains the day's stops in their saved order.
+// Each route URL contains the requested stops in their saved order.
 function stopLocation(id: string): string | null {
   if (id.startsWith("@")) {
     const stay = stayById(id.slice(1));
@@ -10,16 +10,15 @@ function stopLocation(id: string): string | null {
   return place ? (place.q ?? `${place.lat},${place.lng}`) : null;
 }
 
-function directionsUrl(locations: string[]): string {
-  const params = new URLSearchParams({
-    api: "1",
-    origin: locations[0],
-    destination: locations[locations.length - 1],
-    travelmode: "driving",
-  });
-  if (locations.length > 2) {
-    params.set("waypoints", locations.slice(1, -1).join("|"));
-  }
+function directionsUrl(locations: string[], fromCurrentLocation: boolean): string {
+  const params = new URLSearchParams({ api: "1" });
+  // Without an origin, Google Maps uses the device's position when available.
+  if (!fromCurrentLocation) params.set("origin", locations[0]);
+  params.set("destination", locations[locations.length - 1]);
+  params.set("travelmode", "driving");
+
+  const waypoints = fromCurrentLocation ? locations.slice(0, -1) : locations.slice(1, -1);
+  if (waypoints.length) params.set("waypoints", waypoints.join("|"));
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
@@ -29,22 +28,35 @@ export type DayNavigation = {
   stopCount: number;
 };
 
-export function dayNavigation(day: Day): DayNavigation | null {
-  const locations = day.stops.map(stopLocation);
-  // Don't produce a route with an accidentally missing stop.
-  if (locations.length < 2 || locations.some((location) => location === null)) return null;
+// Builds a route from a checked subset, optionally beginning at the device's location.
+export function routeNavigation(stopIds: readonly string[], fromCurrentLocation = false): DayNavigation | null {
+  const locations = stopIds.map(stopLocation);
+  const minStops = fromCurrentLocation ? 1 : 2;
+  // Don't silently skip an invalid stop or create an incomplete itinerary.
+  if (locations.length < minStops || locations.some((location) => location === null)) return null;
   const stops = locations as string[];
 
-  // Google Maps in a mobile browser supports only three intermediate waypoints.
-  // Overlap the last point of each leg with the first point of the next one.
+  // Mobile browsers support at most 3 waypoints. Each part shares its
+  // previous destination with the next part's explicit origin.
   const partUrls: string[] = [];
-  for (let i = 0; i < stops.length - 1; i += 4) {
-    partUrls.push(directionsUrl(stops.slice(i, i + 5)));
+  if (fromCurrentLocation) {
+    partUrls.push(directionsUrl(stops.slice(0, 4), true));
+    for (let i = 3; i < stops.length - 1; i += 4) {
+      partUrls.push(directionsUrl(stops.slice(i, i + 5), false));
+    }
+  } else {
+    for (let i = 0; i < stops.length - 1; i += 4) {
+      partUrls.push(directionsUrl(stops.slice(i, i + 5), false));
+    }
   }
 
   return {
-    fullUrl: directionsUrl(stops),
+    fullUrl: directionsUrl(stops, fromCurrentLocation),
     partUrls,
     stopCount: stops.length,
   };
+}
+
+export function dayNavigation(day: Day): DayNavigation | null {
+  return routeNavigation(day.stops);
 }
