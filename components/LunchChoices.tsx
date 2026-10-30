@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Footprints, UtensilsCrossed } from "lucide-react";
-import type { LunchOption } from "@/lib/trip";
+import { Check, MapPin, UtensilsCrossed } from "lucide-react";
+import { googleMapsSearchUrl, type LunchOption } from "@/lib/trip";
 import { Card, useApp } from "./common";
 
 export default function LunchChoices({ date, options }: { date: string; options: LunchOption[] }) {
@@ -32,13 +32,13 @@ export default function LunchChoices({ date, options }: { date: string; options:
       </h3>
       <p className="mt-1 text-[14px] leading-snug text-sub">
         {lang === "zh"
-          ? "选一家再确认周六营业及订位。选择只储存在这部手机；每家都有步行导航。"
-          : "Choose one, then check Saturday hours and reserve for seven. Your choice stays on this phone only; each has walking directions."}
+          ? "选一家再确认周六营业及订位。选择只储存在这部手机；点地图可查看餐厅，再选「路线」步行前往。"
+          : "Choose one, then check Saturday hours and reserve for seven. Your choice stays on this phone only; tap Map to open the restaurant listing, then Directions to walk there."}
       </p>
       <div className="mt-3 space-y-2">
         {options.map((o) => {
           const selected = choice === o.name;
-          const maps = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.query)}&travelmode=walking`;
+          const maps = googleMapsSearchUrl(o.query);
           return (
             <div key={o.name} className={`flex items-center gap-2 rounded-2xl border p-2.5 ${selected ? "border-shamrock bg-shamrock-soft" : "border-line bg-cream"}`}>
               <label className="flex min-h-12 min-w-0 flex-1 cursor-pointer items-center gap-2.5">
@@ -48,8 +48,8 @@ export default function LunchChoices({ date, options }: { date: string; options:
                   <span className="block text-[13px] leading-snug text-sub">{p(o.food)}</span>
                 </span>
               </label>
-              <a href={maps} target="_blank" rel="noopener noreferrer" aria-label={lang === "zh" ? `步行导航到 ${o.name}` : `Walking directions to ${o.name}`} className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-shamrock px-2.5 text-[13px] font-semibold text-shamrock">
-                <Footprints size={16} />
+              <a href={maps} target="_blank" rel="noopener noreferrer" aria-label={lang === "zh" ? `在 Google 地图查看 ${o.name}` : `View ${o.name} on Google Maps`} className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-shamrock px-2.5 text-[13px] font-semibold text-shamrock">
+                <MapPin size={16} />
                 {lang === "zh" ? "导航" : "Map"}
               </a>
             </div>
