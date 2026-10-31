@@ -1,0 +1,5 @@
+dist/
+site.tar.gz
+.preview-state/
+node_modules/
+outputs/
