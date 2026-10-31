@@ -1,6 +1,6 @@
 // Offline support: pages are network-first (fresh when online, cached when not);
 // static assets and map tiles are cache-first so the app still opens on patchy rural signal.
-const CACHE = "ireland-v1";
+const CACHE = "ireland-duel-nov1-v1";
 const SHELL = ["/", "/manifest.webmanifest?v=family-1", "/family-favicon-32.png", "/family-icon-192.png", "/family-icon-512.png", "/family-apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
@@ -55,4 +55,5 @@ self.addEventListener("fetch", (e) => {
     ),
   );
 });
+
 

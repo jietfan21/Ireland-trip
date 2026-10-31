@@ -39,3 +39,14 @@ The site has names, addresses and dates but no login: anyone with the link can s
 
 Live data (map tiles from OpenFreeMap, weather from Open-Meteo, rates from Frankfurter) needs internet;
 the app itself is cached for patchy signal.
+
+
+## Treasure Duel
+
+Clover Cove → **Duel** uses the same family avatars and dark/gold game UI. 31 October 2026 is free practice; official gold challenges open automatically at **00:00 Europe/Dublin on 1 November**, and close with the trip on 8 November. This does not reset existing wheel gold. Unfinished practice invitations expire at the official start.
+
+Each captain can start one accepted official challenge per Dublin day and accept unlimited incoming invitations. Incoming battles do not block a counter-invite to the sender. Stakes are 5/10/20% of the smaller available balance (custom: multiples of 10, capped at 20%). Reserved coins are held outside wheel attacks, remain in wealth rankings, and return on cancellation/decline/expiry; accepted challenges expire after 24 hours. Plans are stored in a private schema and returned only after both lock. The family-name/no-login trust model remains the same as the existing wheel; this is virtual game gold with no payments or cash-out.
+
+Before releasing the UI, apply `supabase/migrations/20261031122859_treasure_duel.sql` to the existing Ireland Trip project. This is additive; do **not** re-run the destructive wheel installer. The new RPC is `pirate_duel`; its internal helper and tables cannot be accessed by anonymous clients.
+
+Validation: `npm test`, `npm run lint`, `npm run test:duel-db`, `npm run build`. The database test runs the actual migration against an isolated PostgreSQL engine (PGlite), using fictional 1,000-coin accounts, and never connects to the live project.

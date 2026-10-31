@@ -14,3 +14,7 @@ public/family-favicon.ico
 public/family-apple-touch-icon.png
 public/apple-touch-icon.png
 
+
+
+# Supabase CLI local state
+supabase/.temp/

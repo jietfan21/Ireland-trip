@@ -1,0 +1,11 @@
+import { readFile, writeFile, mkdir, rm, copyFile } from 'node:fs/promises';
+const root = new URL('../', import.meta.url);
+const game = await readFile(new URL('worker/game.mjs', root), 'utf8');
+const server = (await readFile(new URL('worker/index.js', root), 'utf8')).replace(/^import .*;\n/gm, '');
+const page = await readFile(new URL('worker/page.html', root), 'utf8');
+await rm(new URL('dist/', root), { recursive: true, force: true });
+await mkdir(new URL('dist/server/', root), { recursive: true });
+await mkdir(new URL('dist/.openai/', root), { recursive: true });
+await writeFile(new URL('dist/server/index.js', root), game + '\nconst PAGE = ' + JSON.stringify(page) + ';\n' + server);
+await copyFile(new URL('.openai/hosting.json', root), new URL('dist/.openai/hosting.json', root));
+console.log('Built Treasure Duel Worker, shared rules and embedded UI.');

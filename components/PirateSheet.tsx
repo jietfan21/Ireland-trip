@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { BookOpen, HelpCircle, Shield, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { BookOpen, HelpCircle, Shield, Trophy, Volume2, VolumeX, X, Swords } from "lucide-react";
 import "./pirate-game.css";
 import { people, type Person } from "@/lib/trip";
 import { DAYS, MAX_SHIELDS, WEDGES, dayMultiplier, mirrorPrice, leaderboard, nextDublinMidnightMs, pickWedge, todayOverride, tripDayNumber, victims, visibleEvents, type Event, type PlayerRow } from "@/lib/pirate";
@@ -13,6 +13,8 @@ import PirateWheel, { StealWheel } from "./PirateWheel";
 import { AnimatedGold, CoinCollection } from "./PirateCoins";
 import PirateEffects, { type PirateEffect } from "./PirateEffects";
 import PirateCrew from "./PirateCrew";
+import PirateDuel from "./PirateDuel";
+import { useDuel } from "@/lib/duelStore";
 import { tr, type Lang, type UiKey } from "@/lib/i18n";
 
 type Phase = "idle" | "spinning" | "stealing" | "pick" | "impact" | "landed";
@@ -58,6 +60,10 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
   const me = person?.id ?? null;
   const [today, setToday] = useState(() => todayOverride(location.search, location.hostname) ?? irelandToday());
   const game = usePirate(me, today);
+  const duel = useDuel(me);
+  const [screen, setScreen] = useState<"wheel" | "duel">("wheel");
+  const duelReady = duel.data?.matches.some(c => (c.status === "pending" && c.b === me) || (c.status === "accepted" && !(c.a === me ? c.aReady : c.bReady)));
+  useEffect(() => { if (duel.data) void game.refresh(); }, [duel.data, game.refresh]);
   const [phase, setPhase] = useState<Phase>("idle");
   const [panel, setPanel] = useState<Panel>(null);
   const [rotation, setRotation] = useState(0);
@@ -278,7 +284,7 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
           </div>
         </header>
 
-        <div className="pirate-season"><span className="pirate-live-dot" />{seasonLabel}</div>
+        <div className="pirate-season"><span className="pirate-live-dot" />{screen === "duel" && duel.data ? (duel.data.practice ? say("练习 · 11月1日开赛", "PRACTICE · OFFICIAL 1 NOV") : say("正式对决", "OFFICIAL DUELS")) : seasonLabel}</div>
 
         <section className="pirate-hud" aria-label={say("你的宝藏", "Your treasure")}>
           <div className="pirate-player">{person && <Avatar person={person} size={36} />}<span>{person && p(person)}<small>{say("船长", "CAPTAIN")}</small></span></div>
@@ -288,7 +294,7 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
           </button>
         </section>
 
-        {showSummary ? <main ref={summaryRef} tabIndex={-1} className="pirate-session-summary" aria-labelledby="pirate-session-title">
+        {screen === "duel" ? <PirateDuel duel={duel} onGoldChange={() => void game.refresh()} /> : showSummary ? <main ref={summaryRef} tabIndex={-1} className="pirate-session-summary" aria-labelledby="pirate-session-title">
           <div className="pirate-session-heading"><div><div className="pirate-eyebrow">{say("本轮冒险告一段落", "THAT'S A WRAP, CAPTAIN")}</div><h2 id="pirate-session-title">{say("家族战报", "From the crew")}</h2></div><button className="pirate-summary-wheel" onClick={() => setViewEmptyWheel(true)}>{say("查看转盘", "View wheel")} ↗</button></div>
           <div className="pirate-session-refill"><span>🎡 {t("nextDayIn")}</span><strong>{timeLeft}</strong></div>
           {caption && <div className={"pirate-session-last-result " + (caption.good ? "is-good" : "is-bad")}><small>{say("最后一转", "LAST SPIN")}</small><strong>{caption.icon} {caption.text}</strong></div>}
@@ -333,7 +339,8 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
         </main>}
 
         <nav className="pirate-dock" aria-label={say("游戏菜单", "Game menu")}>
-          <button className="pirate-dock-active" disabled={busy} onClick={() => { openPanel(null); if (exhausted) setViewEmptyWheel(false); }}><span>{showSummary ? "🏆" : "🎡"}</span>{showSummary ? say("战报", "SUMMARY") : say("转盘", "PLAY")}</button>
+          <button className={screen === "wheel" ? "pirate-dock-active" : ""} disabled={busy || duel.busy} onClick={() => { setScreen("wheel"); openPanel(null); if (exhausted) setViewEmptyWheel(false); }}><span>{showSummary ? "🏆" : "🎡"}</span>{showSummary ? say("战报", "SUMMARY") : say("转盘", "PLAY")}</button>
+          <button className={screen === "duel" ? "pirate-dock-active" : ""} disabled={busy || duel.busy} onClick={() => { setScreen("duel"); openPanel(null); }}><Swords size={23} />{say("对决", "DUEL")}{duelReady && <i />}</button>
           <button disabled={busy} onClick={() => { openPanel("defend"); setHelp(false); }}><Shield size={23} />{say("防御", "DEFEND")}{mine?.mirror && <i />}</button>
           <button disabled={busy} onClick={() => openPanel("crew")}><Trophy size={23} />{say("家族", "CREW")}</button>
           <button disabled={busy} onClick={() => openPanel("rules")}><BookOpen size={23} />{say("玩法", "RULES")}</button>
@@ -391,4 +398,5 @@ const RULES = [
   { zh: "🪞 镜子（最多一面）：优先于盾牌，挡下下一次攻击并反弹同样伤害，用后消失。两块盾牌悄悄换一面，或花 30% 金币买一面，最低 300（大家都会看到）。", en: "🪞 Mirror (max one): activates before shields, blocks the next attack and sends the same hit back, then is used up. Trade two shields for one quietly, or buy one for 30% of your gold, minimum 300 (everyone sees that)." },
   { zh: `10月25日第 1 天大家重新从 1,000 开始，第 ${DAYS} 天（11月7日）结束，最多的人是海盗王 👑`, en: `Day 1 (25 Oct) everyone restarts at 1,000; after Day ${DAYS} (7 Nov) the richest is Pirate King 👑` },
 ];
+
 

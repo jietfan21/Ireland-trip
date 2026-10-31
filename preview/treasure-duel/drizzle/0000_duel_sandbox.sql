@@ -1,0 +1,5 @@
+CREATE TABLE duel_sandbox (
+  id TEXT PRIMARY KEY NOT NULL,
+  version INTEGER NOT NULL DEFAULT 0,
+  state TEXT NOT NULL
+);
