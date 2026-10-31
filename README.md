@@ -43,10 +43,26 @@ the app itself is cached for patchy signal.
 
 ## Treasure Duel
 
-Clover Cove → **Duel** uses the same family avatars and dark/gold game UI. 31 October 2026 is free practice; official gold challenges open automatically at **00:00 Europe/Dublin on 1 November**, and close with the trip on 8 November. This does not reset existing wheel gold. Unfinished practice invitations expire at the official start.
+Clover Cove → **Duel** uses the same dark/gold UI and family avatars. First visits open Duel with a short skippable tour, remembered per captain per device. 31 October 2026 is free practice; official gold attacks open at **00:00 Europe/Dublin on 1 November**. Existing wheel gold is preserved.
 
-Each captain can start one accepted official challenge per Dublin day and accept unlimited incoming invitations. Incoming battles do not block a counter-invite to the sender. Stakes are 5/10/20% of the smaller available balance (custom: multiples of 10, capped at 20%). Reserved coins are held outside wheel attacks, remain in wealth rankings, and return on cancellation/decline/expiry; accepted challenges expire after 24 hours. Plans are stored in a private schema and returned only after both lock. The family-name/no-login trust model remains the same as the existing wheel; this is virtual game gold with no payments or cash-out.
+### Attack and defend
 
-Before releasing the UI, apply `supabase/migrations/20261031122859_treasure_duel.sql` to the existing Ireland Trip project. This is additive; do **not** re-run the destructive wheel installer. The new RPC is `pirate_duel`; its internal helper and tables cannot be accessed by anonymous clients.
+Choose an opponent and 5/10/20% stake (custom: multiples of 10, capped at 20% of the smaller available balance), arrange all **12 shots** across five islands (0–5 each), and launch. The attacker’s plan locks and both stakes reserve in one transaction. There is no acceptance/decline step and no cancellation for new attacks. One official outgoing attack per Dublin day is counted on launch; incoming attacks are unlimited and do not consume the defender’s own attack. Multiple captains may target the same person.
 
-Validation: `npm test`, `npm run lint`, `npm run test:duel-db`, `npm run build`. The database test runs the actual migration against an isolated PostgreSQL engine (PGlite), using fictional 1,000-coin accounts, and never connects to the live project.
+The defender has 24 hours to lock a plan. If absent, the server chooses one of the 780 valid allocations uniformly, saves it once, and resolves the duel normally. Automatic defence can win. No additional shield penalty is applied. Retries or refreshes cannot reroll or repay. Staked coins stay in wealth rankings and are held outside wheel attacks.
+
+Practice attacks never change gold and do not consume the official allowance. Bot practice is unlimited, even while a human practice attack waits. Unfinished practice is refunded/closed at the official-start boundary. At the trip’s end (00:00 Dublin on 8 November), incomplete attacks with less than a full 24-hour response window are refunded rather than auto-defended early. Older optional invitations retain their original acceptance/refund rules.
+
+Results use a five-round 2D sea-battle reveal with avatars on ships, simultaneous cannon counts, island capture and running scores. **Next round** advances immediately; **Skip to result** shows the saved final result. No reveal control calls a gold mutation. Reduced-motion users get manual, static round results. Hidden browser tabs pause the reveal. The same no-login/family-name trust model remains intentionally enabled for virtual game gold, with no payments or cash-out.
+
+### Database and timer
+
+Apply the three additive migrations in `supabase/migrations/` in order; do not re-run the destructive original wheel installer. Secret plans and replay receipts live in `duel_private`, which has no anonymous schema access. The public RPC remains `pirate_duel`. New clients use `launch`, `lock`, and `state`; old invitation creation is rejected with `update_required`. Existing legacy invitations still work.
+
+The latest migration enables `pg_cron` and runs a private settlement function every minute. The timer settles overdue attacks even with no open phones. API reads also settle due attacks. Both paths use the same advisory lock and row order, so payout happens once. The scheduled job removes itself after the trip ends and all open matches are resolved. Private clock helpers cannot be called by anonymous clients.
+
+### Validation
+
+`npm run lint`, `npm test`, `npm run test:duel-db`, `npm run build`.
+
+The isolated PostgreSQL integration tests apply the original and upgrade migrations against synthetic 1,000-coin accounts using PGlite, never the live project. They cover reservations and gold conservation, forced launch, timer settlement, manual/late defence, no reroll, defender victory, unlimited incoming attacks, missing accounts, invalid plans, season cutoffs, legacy compatibility and keeping pending defences visible behind large practice histories. Reveal reducer tests cover stale timers, rapid Next/Skip and reduced motion.

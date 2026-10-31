@@ -14,7 +14,7 @@ export default function DuelTour({ onFinish, practice }: Props) {
   const lines = [
     say("炮弹多，就拿下该岛分数。", "More shots wins that island’s points."),
     say("每岛0–5枚，总共12枚。", "0–5 shots per island. 12 in total."),
-    say("双方锁定后揭晓，总分高者赢。", "Both lock. Reveal together. Highest score wins."),
+    say("锁定进攻，24小时内防守。", "Lock your attack. Defend within 24h."),
   ];
   return (
     <div className="duel-tour">
@@ -28,7 +28,7 @@ export default function DuelTour({ onFinish, practice }: Props) {
       <div className="duel-tour-copy" aria-live="polite">
         <h3>{titles[step]}</h3>
         <p>{lines[step]}</p>
-        {step === 2 && <small>{practice ? say("练习不扣金币", "Practice uses no gold") : say("胜者赢奖池 · 平局退回", "Winner takes the pot · Draws refund")}</small>}
+        {step === 2 && <small>{practice ? say("练习不扣金币", "Practice uses no gold") : say("超时随机防守 · 总分高者赢", "Timeout: random defence · Highest score wins")}</small>}
       </div>
       <div className="duel-tour-actions">
         <button className="pirate-secondary-button" onClick={step === 0 ? onFinish : () => setStep(n => n - 1)}>{step === 0 ? say("跳过", "Skip") : say("上一步", "Back")}</button>
