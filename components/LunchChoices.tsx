@@ -9,6 +9,8 @@ export default function LunchChoices({ date, options }: { date: string; options:
   const { lang, p } = useApp();
   const [choice, setChoice] = useState<string | null>(null);
   const key = `ireland-trip:lunch:${date}`;
+  const roadTrip = date === "2026-11-01";
+  const dayOfWeek = new Date(`${date}T12:00:00Z`).toLocaleDateString("en-IE", { weekday: "long", timeZone: "Europe/Dublin" });
 
   useEffect(() => {
     try {
@@ -31,9 +33,13 @@ export default function LunchChoices({ date, options }: { date: string; options:
         {lang === "zh" ? "午餐：七选一（7 人）" : "Lunch: pick one for seven"}
       </h3>
       <p className="mt-1 text-[14px] leading-snug text-sub">
-        {lang === "zh"
-          ? "选一家再确认周六营业及订位。选择只储存在这部手机；点地图可查看餐厅，再选「路线」步行前往。"
-          : "Choose one, then check Saturday hours and reserve for seven. Your choice stays on this phone only; tap Map to open the restaurant listing, then Directions to walk there."}
+        {roadTrip
+          ? (lang === "zh"
+            ? "选一家，先确认周日营业与七人订位。餐厅遍布不同小镇，需开车前往；选择只存在这部手机。"
+            : "Pick one and confirm Sunday opening and a table for seven. These are in different towns, so drive to your chosen restaurant. Saved on this phone only.")
+          : (lang === "zh"
+            ? "选一家再确认周六营业及订位。选择只储存在这部手机；点地图可查看餐厅，再选「路线」步行前往。"
+            : `Choose one, then check ${dayOfWeek} hours and reserve for seven. Your choice stays on this phone only; tap Map to open the listing, then Directions to walk there.`)}
       </p>
       <div className="mt-3 space-y-2">
         {options.map((o) => {

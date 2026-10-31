@@ -45,6 +45,14 @@ function RouteParts({ route, lang }: { route: DayNavigation; lang: "zh" | "en" }
 export default function FullDayNavigation({ day, compact = false }: { day: Day; compact?: boolean }) {
   const { lang } = useApp();
   const fullRoute = dayNavigation(day);
+  const ferryStartIndex = day.stops.indexOf("killimer");
+  const ferryEndIndex = day.stops.indexOf("tarbert");
+  const beforeFerry = ferryStartIndex >= 1 && ferryEndIndex === ferryStartIndex + 1
+    ? routeNavigation(day.stops.slice(0, ferryStartIndex + 1))
+    : null;
+  const afterFerry = ferryEndIndex >= 0
+    ? routeNavigation(day.stops.slice(ferryEndIndex))
+    : null;
   const [checked, setChecked] = useState<boolean[]>(() => day.stops.map(() => true));
   const [fromCurrentLocation, setFromCurrentLocation] = useState(false);
 
@@ -82,6 +90,26 @@ export default function FullDayNavigation({ day, compact = false }: { day: Day; 
         <ExternalLink size={compact ? 15 : 17} />
       </a>
       <RouteParts route={fullRoute} lang={lang} />
+
+      {beforeFerry && afterFerry && (
+        <div className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 p-3">
+          <p className="text-[13px] leading-snug font-semibold text-amber-900">
+            {lang === "zh"
+              ? "⛴️ 今天须开车上 Killimer–Tarbert 渡轮。全程路线可能绕经 Limerick，请用下方两段导航，渡轮约 20 分钟。"
+              : "⛴️ Take the Killimer–Tarbert car ferry. Google Maps may route the full journey around Limerick; use these two driving legs with the ~20-minute ferry in between."}
+          </p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <a href={beforeFerry.fullUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center gap-1 rounded-xl bg-shamrock px-2 text-center text-[13px] font-bold text-white">
+              <Route size={15} />
+              {lang === "zh" ? "① 导航去 Killimer" : "① Drive to Killimer"}
+            </a>
+            <a href={afterFerry.fullUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center gap-1 rounded-xl bg-shamrock px-2 text-center text-[13px] font-bold text-white">
+              <Route size={15} />
+              {lang === "zh" ? "② Tarbert → Airbnb" : "② Tarbert → Airbnb"}
+            </a>
+          </div>
+        </div>
+      )}
 
       <details className={`mt-2 rounded-2xl bg-cream px-3 py-2 ${compact ? "max-h-[42vh] overflow-y-auto" : ""}`}>
         <summary className="min-h-9 cursor-pointer py-1 text-[14px] font-bold text-shamrock">
