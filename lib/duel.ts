@@ -9,6 +9,6 @@ export function duelScores(a: number[],b: number[]) {
  if (!validDuelPlan(a)||!validDuelPlan(b)) throw new Error("invalid_plan");
  return DUEL_POINTS.reduce((s,n,i)=>[s[0]+(a[i]>b[i]?n:0),s[1]+(b[i]>a[i]?n:0)],[0,0]);
 }
-export type DuelMatch = { id: string; a: string; b: string; stake: number; practice: boolean; status: "pending"|"accepted"|"complete"|"cancelled"|"declined"|"expired"; expires: string; aReady: boolean; bReady: boolean; aPlan: number[]|null; bPlan: number[]|null; aScore: number|null; bScore: number|null; winner: string|null };
+export type DuelMatch = { id: string; a: string; b: string; stake: number; practice: boolean; status: "pending"|"accepted"|"complete"|"cancelled"|"declined"|"expired"; expires: string; aReady: boolean; bReady: boolean; aPlan: number[]|null; bPlan: number[]|null; aScore: number|null; bScore: number|null; winner: string|null; forced?: boolean; autoDefended?: boolean };
 export type DuelState = { day: string; practice: boolean; ended: boolean; used: boolean; selected?: string; players: {id:string;gold:number;reserved:number}[]; matches: DuelMatch[] };
 export const duelActive = (c:DuelMatch) => c.status === "pending" || c.status === "accepted";

@@ -71,4 +71,83 @@ await check('final-day deadline releases holds at season end',async()=>{
  const id=await invite('jiet','dad',100,'2026-11-07T23:50:00Z');await rpc('dad','accept',{id},'2026-11-07T23:55:00Z');const s=await rpc('jiet','state',{},'2026-11-08T00:00:00Z');assert.equal(s.ended,true);assert.equal(s.matches[0].status,'expired');await assert.rejects(()=>invite('jiet','mom',100,'2026-11-08T00:00:01Z'),/game_over/);
 });
 console.log(passed+' PostgreSQL integration checks passed. No live database was used.');
+
+await clean();
+await db.exec(await readFile(new URL('../supabase/migrations/20261031134319_forced_duels.sql',import.meta.url),'utf8'));
+await db.exec('alter table public.pirate_players add column shields integer default 3');
+async function launch(a='jiet',b='dad',stake=100,at=OFFICIAL,plan=[0,0,3,4,5],key=randomUUID(),practice=false){return rpc(a,'launch',{target:b,stake,plan,practice},at,key);}
+async function advance(at){return (await db.query('select duel_private.tick($1::timestamptz) as n',[at])).rows[0].n;}
+await check('forced launch reserves both stakes immediately and consumes only the attacker allowance',async()=>{
+ const r=await launch();const c=r.matches.find(c=>c.id===r.selected);assert.equal(c.status,'accepted');assert.equal(c.forced,true);assert.equal(c.aReady,true);assert.equal(c.bReady,false);assert.equal(c.aPlan,null);assert.equal(c.bPlan,null);assert.equal(r.used,true);assert.equal(r.players.find(p=>p.id==='jiet').gold,900);assert.equal(r.players.find(p=>p.id==='dad').gold,900);assert.equal((await rpc('dad')).used,false);
+ for(const action of ['decline','cancel'])await assert.rejects(()=>rpc(action==='decline'?'dad':'jiet',action,{id:c.id}),/attack_started/);
+});
+await check('no launch without a valid complete attacker plan, and no empty-wallet minting',async()=>{
+ for(const plan of [[],[5,5,2,null,null],[1,1,1,1,1],[2.5,2.5,2,2,3]])await assert.rejects(()=>launch('jiet','dad',100,OFFICIAL,plan),/invalid_plan/);
+ await db.exec("delete from public.pirate_players where id='dad'");await assert.rejects(()=>launch(),/choose_player/);await db.exec("insert into public.pirate_players(id) values('dad')");
+ assert.equal((await db.query('select sum(duel_reserved)::int as held from public.pirate_players')).rows[0].held,0);
+});
+await check('launch retries reserve only once and cannot steal a reused request key',async()=>{
+ const key=randomUUID(),r=await launch('jiet','dad',100,OFFICIAL,[0,0,3,4,5],key);await launch('jiet','dad',100,OFFICIAL,[0,0,3,4,5],key);
+ assert.equal((await rpc('jiet')).matches.length,1);assert.equal((await rpc('jiet')).players.find(p=>p.id==='jiet').gold,900);
+ await assert.rejects(()=>launch('mom','dad',100,OFFICIAL,[0,0,3,4,5],key),/request_key_conflict/);
+ await rpc('dad','lock',{id:r.selected,plan:[2,2,2,3,3]});await assert.rejects(()=>launch('jiet','mom'),/daily_attack_used/);
+});
+await check('24-hour server timer saves one random defence and settles exactly once while nobody opens the app',async()=>{
+ const r=await launch();assert.equal(await advance('2026-11-02T11:59:59Z'),0);assert.equal(await advance('2026-11-02T12:00:00Z'),1);
+ let s=await rpc('jiet','state',{},'2026-11-02T12:01:00Z'),m=s.matches.find(m=>m.id===r.selected);const saved=JSON.stringify(m.bPlan);
+ assert.equal(m.status,'complete');assert.equal(m.autoDefended,true);assert.equal(m.bPlan.length,5);assert.equal(m.bPlan.reduce((a,b)=>a+b,0),12);assert.equal(m.bPlan.every(n=>Number.isInteger(n)&&n>=0&&n<=5),true);
+ assert.equal(await advance('2026-11-02T12:02:00Z'),0);s=await rpc('jiet','state',{},'2026-11-02T12:03:00Z');assert.equal(JSON.stringify(s.matches.find(m=>m.id===r.selected).bPlan),saved);
+ assert.equal((await db.query('select count(*)::int as n from public.pirate_events')).rows[0].n,1);
+ assert.equal((await db.query('select bool_and(shields=3) as same from public.pirate_players')).rows[0].same,true);
+});
+await check('manual defence before the deadline wins normally without an automatic flag',async()=>{
+ const r=await launch('jiet','dad',100,OFFICIAL,[2,2,2,3,3]);const s=await rpc('dad','lock',{id:r.selected,plan:[0,0,3,4,5]},'2026-11-02T11:59:59Z');const m=s.matches.find(m=>m.id===r.selected);
+ assert.equal(m.winner,'dad');assert.equal(m.autoDefended,false);assert.equal(s.players.find(p=>p.id==='dad').gold,1100);
+});
+await check('a late defence returns the saved automatic result rather than replacing it',async()=>{
+ const r=await launch();const s=await rpc('dad','lock',{id:r.selected,plan:[0,0,0,0,0]},'2026-11-02T12:00:01Z');const m=s.matches.find(m=>m.id===r.selected);
+ assert.equal(m.status,'complete');assert.equal(m.autoDefended,true);assert.equal(m.bPlan.reduce((a,b)=>a+b,0),12);assert.equal((await db.query('select count(*)::int as n from public.pirate_events')).rows[0].n,1);
+});
+await check('several attackers may target one captain without consuming that captain’s own attack',async()=>{
+ for(const a of ['dad','mom','rong','hui','yao','ying'])await launch(a,'jiet',50);
+ const before=await rpc('jiet');assert.equal(before.matches.filter(m=>m.status==='accepted').length,6);assert.equal(before.used,false);
+ await assert.doesNotReject(()=>launch('jiet','dad',50));assert.equal((await rpc('jiet')).used,true);
+});
+await check('a new Dublin day grants an attack even while yesterday’s attack awaits its full 24-hour deadline',async()=>{
+ await launch('jiet','dad',100,'2026-11-01T18:00:00Z');
+ const r=await launch('jiet','mom',100,'2026-11-02T08:00:00Z');assert.equal(r.matches.filter(m=>m.status==='accepted').length,2);assert.equal(r.used,true);
+ await assert.rejects(()=>launch('jiet','hui',100,'2026-11-02T09:00:00Z'),/daily_attack_used/);
+});
+await check('random plans are valid, varied and independent of the attacking plan',async()=>{
+ const plans=[];for(let i=0;i<30;i++){const p=(await db.query('select duel_private.random_plan() as plan')).rows[0].plan;assert.equal(p.length,5);assert.equal(p.reduce((a,b)=>a+b,0),12);assert.equal(p.every(n=>n>=0&&n<=5),true);plans.push(JSON.stringify(p));}
+ assert.ok(new Set(plans).size>1);
+});
+await check('automatic defence can win; the server never awards a default win to the attacker',async()=>{
+ let seed=0,expected;const a=[5,5,2,0,0];
+ for(let i=1;i<=100;i++){seed=i/101;await db.query('select setseed($1)',[seed]);const b=(await db.query('select duel_private.random_plan() as plan')).rows[0].plan;let sa=0,sb=0;for(let j=0;j<5;j++){if(a[j]>b[j])sa+=j+1;else if(b[j]>a[j])sb+=j+1;}if(sb>sa){expected=b;break;}}
+ assert.ok(expected);const r=await launch('jiet','dad',100,OFFICIAL,a);await db.query('select setseed($1)',[seed]);await advance('2026-11-02T12:00:00Z');const m=(await rpc('jiet','state',{},'2026-11-02T12:01:00Z')).matches.find(m=>m.id===r.selected);assert.deepEqual(m.bPlan,expected);assert.equal(m.winner,'dad');
+});
+await check('practice remains free and expires at official midnight without becoming a paid attack',async()=>{
+ const r=await launch('jiet','dad',200,PRACTICE);assert.equal(r.players.every(p=>p.gold===1000),true);
+ await advance('2026-11-01T00:00:00Z');const s=await rpc('jiet');assert.equal(s.matches.find(m=>m.id===r.selected).status,'expired');assert.equal(s.used,false);assert.equal(s.players.every(p=>p.reserved===0),true);
+});
+await check('free bot practice works even while a human practice or official attack is waiting',async()=>{
+ await launch('jiet','dad',100,PRACTICE);for(let i=0;i<3;i++){const r=await launch('jiet','bot',0,PRACTICE,[0,0,3,4,5],randomUUID(),true);assert.equal(r.matches.find(m=>m.id===r.selected).status,'complete');}assert.equal(await total(),7000);
+});
+await check('active incoming defences stay visible after more than eighty practice results',async()=>{
+ const r=await launch('dad','jiet');await db.exec(`insert into duel_private.matches(a,b,stake,practice,status,created_at,expires_at,a_plan,b_plan,a_score,b_score,forced)
+ select 'jiet','bot',0,true,'complete',timestamptz '2026-11-01 12:00Z'+n*interval '1 second',timestamptz '2026-11-02 12:00Z',array[0,0,3,4,5],array[0,0,3,4,5],0,0,true from generate_series(1,90) n`);
+ const s=await rpc('jiet');assert.equal(s.matches.length,80);assert.equal(s.matches[0].id,r.selected);
+});
+await check('existing optional invitations retain their original acceptance/refund flow',async()=>{
+ const r=(await db.query('select duel_private.run_v1($1,$2,$3::jsonb,$4::uuid,$5::timestamptz) as s',['jiet','invite',JSON.stringify({target:'dad',stake:100}),randomUUID(),OFFICIAL])).rows[0].s;
+ await rpc('dad','decline',{id:r.selected});assert.equal((await rpc('jiet')).players.every(p=>p.gold===1000),true);
+});
+await check('the season ending earlier than 24 hours refunds instead of forcing an early defence',async()=>{
+ const r=await launch('jiet','dad',100,'2026-11-07T23:50:00Z');await advance('2026-11-08T00:00:00Z');const s=await rpc('jiet','state',{},'2026-11-08T00:00:00Z');const m=s.matches.find(m=>m.id===r.selected);assert.equal(m.status,'expired');assert.equal(m.autoDefended,false);assert.equal(s.players.every(p=>p.gold===1000&&p.reserved===0),true);
+});
+await check('new internal random and settlement helpers are inaccessible to anonymous clients',async()=>{
+ for(const signature of ['duel_private.random_plan()','duel_private.tick(timestamptz)','duel_private.settle(uuid,timestamptz)','duel_private.plan(jsonb)','duel_private.project(text,timestamptz)']){const r=await db.query("select has_function_privilege('anon',$1,'execute') as allowed",[signature]);assert.equal(r.rows[0].allowed,false);}
+});
+console.log(passed+' total PostgreSQL integration checks passed. No live database was used.');
 await db.close();
