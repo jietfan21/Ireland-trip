@@ -3,7 +3,7 @@ export const DUEL_END = "2026-11-07";
 export const DUEL_POINTS = [1, 2, 3, 4, 5];
 export const DUEL_ICONS = ["🐚", "🌴", "🪸", "💀", "👑"];
 export function duelSeason(day: string) { return day < DUEL_START ? "practice" : day > DUEL_END ? "over" : "official"; }
-export function validDuelPlan(plan: number[]) { return plan.length === 5 && plan.every(n => Number.isInteger(n) && n >= 0 && n <= 5) && plan.reduce((a,b)=>a+b,0) === 12; }
+export function validDuelPlan(plan: number[]) { return plan.length === 5 && plan.every(n => Number.isInteger(n) && n >= 0) && plan.reduce((a,b)=>a+b,0) === 12; }
 export function duelStake(a: number, b: number, percent: number) { return Math.floor(Math.min(a,b)*percent/100/10)*10; }
 export function duelScores(a: number[],b: number[]) {
  if (!validDuelPlan(a)||!validDuelPlan(b)) throw new Error("invalid_plan");
