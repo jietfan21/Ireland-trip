@@ -14,6 +14,7 @@ import { AnimatedGold, CoinCollection } from "./PirateCoins";
 import PirateEffects, { type PirateEffect } from "./PirateEffects";
 import PirateCrew from "./PirateCrew";
 import PirateDuel from "./PirateDuel";
+import DuelTour from "./DuelTour";
 import { useDuel } from "@/lib/duelStore";
 import { tr, type Lang, type UiKey } from "@/lib/i18n";
 
@@ -61,7 +62,18 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
   const [today, setToday] = useState(() => todayOverride(location.search, location.hostname) ?? irelandToday());
   const game = usePirate(me, today);
   const duel = useDuel(me);
-  const [screen, setScreen] = useState<"wheel" | "duel">("wheel");
+  const tourKey = `ie.duel.tour.v1.${me}`;
+  const [screen, setScreen] = useState<"wheel" | "duel">(() => me && readLocal<boolean>(tourKey, false) !== true ? "duel" : "wheel");
+  const [duelTour, setDuelTour] = useState(() => Boolean(me && readLocal<boolean>(tourKey, false) !== true));
+  useEffect(() => {
+    const firstVisit = Boolean(me && readLocal<boolean>(`ie.duel.tour.v1.${me}`, false) !== true);
+    setScreen(firstVisit ? "duel" : "wheel");
+    setDuelTour(firstVisit);
+  }, [me]);
+  function finishDuelTour() {
+    if (me) writeLocal(tourKey, true);
+    setDuelTour(false);
+  }
   const duelReady = duel.data?.matches.some(c => (c.status === "pending" && c.b === me) || (c.status === "accepted" && !(c.a === me ? c.aReady : c.bReady)));
   useEffect(() => { if (duel.data) void game.refresh(); }, [duel.data, game.refresh]);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -294,7 +306,7 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
           </button>
         </section>
 
-        {screen === "duel" ? <PirateDuel duel={duel} onGoldChange={() => void game.refresh()} /> : showSummary ? <main ref={summaryRef} tabIndex={-1} className="pirate-session-summary" aria-labelledby="pirate-session-title">
+        {screen === "duel" ? <PirateDuel duel={duel} onGoldChange={() => void game.refresh()} onTour={() => setDuelTour(true)} /> : showSummary ? <main ref={summaryRef} tabIndex={-1} className="pirate-session-summary" aria-labelledby="pirate-session-title">
           <div className="pirate-session-heading"><div><div className="pirate-eyebrow">{say("本轮冒险告一段落", "THAT'S A WRAP, CAPTAIN")}</div><h2 id="pirate-session-title">{say("家族战报", "From the crew")}</h2></div><button className="pirate-summary-wheel" onClick={() => setViewEmptyWheel(true)}>{say("查看转盘", "View wheel")} ↗</button></div>
           <div className="pirate-session-refill"><span>🎡 {t("nextDayIn")}</span><strong>{timeLeft}</strong></div>
           {caption && <div className={"pirate-session-last-result " + (caption.good ? "is-good" : "is-bad")}><small>{say("最后一转", "LAST SPIN")}</small><strong>{caption.icon} {caption.text}</strong></div>}
@@ -348,6 +360,10 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
       </div>
 
       {reward && phase === "landed" && <CoinCollection key={reward.id} origin={rewardRef} destination={balanceRef} reduced={reduced} />}
+
+      {duelTour && <GameDialog title={say("对决入门", "Duel basics")} busy={false} onClose={finishDuelTour} closeLabel={say("跳过教程", "Skip tour")}>
+        <DuelTour onFinish={finishDuelTour} practice={duel.data?.practice ?? today < "2026-11-01"} />
+      </GameDialog>}
 
       {panel && <GameDialog title={panelTitle} busy={busy} onClose={() => { setPanel(null); setOrder(null); }} closeLabel={say("关闭", "Close")}>
         {order ? <div className="pirate-mirror-confirm">
