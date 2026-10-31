@@ -92,6 +92,7 @@ export function nextDublinMidnightMs(now: Date): number {
 export type PlayerRow = {
   id: string;
   gold: number;
+  duel_reserved?: number;
   shields: number;
   mirror: boolean;
   spins: number;
@@ -107,7 +108,7 @@ function current(rows: PlayerRow[], season: string, id: string): PlayerRow | und
 
 // Everyone, richest first; people who haven't opened the game this season count as fresh.
 export function leaderboard(ids: string[], rows: PlayerRow[], season: string) {
-  const list = ids.map((id) => ({ id, gold: current(rows, season, id)?.gold ?? START_GOLD, leader: false }));
+  const list = ids.map((id) => ({ id, gold: current(rows, season, id) ? current(rows, season, id)!.gold + (current(rows, season, id)!.duel_reserved ?? 0) : START_GOLD, leader: false }));
   list.sort((a, b) => b.gold - a.gold);
   const top = list[0]?.gold ?? 0;
   for (const x of list) x.leader = x.gold === top;
@@ -169,6 +170,8 @@ export function eventText(e: Event, name: (id: string) => string): L {
       return { zh: `${a} 想偷，但没人可偷 🤷`, en: `${a} went stealing but found nobody to rob 🤷` };
     case "boom_none":
       return { zh: `${a} 的炸弹没炸到东西 🤷`, en: `${a}'s boom hit nothing 🤷` };
+    case "duel":
+      return { zh: n === 0 ? `${a} 与 ${t} 对决平局` : `${n > 0 ? a : t} 赢下对决 +${Math.abs(n)} 🪙`, en: n === 0 ? `${a} and ${t} drew their duel` : `${n > 0 ? a : t} won the duel +${Math.abs(n)} 🪙` };
     case "reset":
       return { zh: `${a} 进入正式赛，从 1,000 金币开始`, en: `${a} starts the trip season at 1,000 gold` };
     default:
@@ -195,4 +198,5 @@ export function todayOverride(search: string, hostname: string): string | null {
   const v = new URLSearchParams(search).get("today");
   return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
 }
+
 
