@@ -74,6 +74,7 @@ console.log(passed+' PostgreSQL integration checks passed. No live database was 
 
 await clean();
 await db.exec(await readFile(new URL('../supabase/migrations/20261031134319_forced_duels.sql',import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('../supabase/migrations/20261031184626_uncapped_duel_shots.sql',import.meta.url),'utf8'));
 await db.exec('alter table public.pirate_players add column shields integer default 3');
 async function launch(a='jiet',b='dad',stake=100,at=OFFICIAL,plan=[0,0,3,4,5],key=randomUUID(),practice=false){return rpc(a,'launch',{target:b,stake,plan,practice},at,key);}
 async function advance(at){return (await db.query('select duel_private.tick($1::timestamptz) as n',[at])).rows[0].n;}
@@ -95,7 +96,7 @@ await check('launch retries reserve only once and cannot steal a reused request 
 await check('24-hour server timer saves one random defence and settles exactly once while nobody opens the app',async()=>{
  const r=await launch();assert.equal(await advance('2026-11-02T11:59:59Z'),0);assert.equal(await advance('2026-11-02T12:00:00Z'),1);
  let s=await rpc('jiet','state',{},'2026-11-02T12:01:00Z'),m=s.matches.find(m=>m.id===r.selected);const saved=JSON.stringify(m.bPlan);
- assert.equal(m.status,'complete');assert.equal(m.autoDefended,true);assert.equal(m.bPlan.length,5);assert.equal(m.bPlan.reduce((a,b)=>a+b,0),12);assert.equal(m.bPlan.every(n=>Number.isInteger(n)&&n>=0&&n<=5),true);
+ assert.equal(m.status,'complete');assert.equal(m.autoDefended,true);assert.equal(m.bPlan.length,5);assert.equal(m.bPlan.reduce((a,b)=>a+b,0),12);assert.equal(m.bPlan.every(n=>Number.isInteger(n)&&n>=0&&n<=12),true);
  assert.equal(await advance('2026-11-02T12:02:00Z'),0);s=await rpc('jiet','state',{},'2026-11-02T12:03:00Z');assert.equal(JSON.stringify(s.matches.find(m=>m.id===r.selected).bPlan),saved);
  assert.equal((await db.query('select count(*)::int as n from public.pirate_events')).rows[0].n,1);
  assert.equal((await db.query('select bool_and(shields=3) as same from public.pirate_players')).rows[0].same,true);
@@ -119,7 +120,7 @@ await check('a new Dublin day grants an attack even while yesterday’s attack a
  await assert.rejects(()=>launch('jiet','hui',100,'2026-11-02T09:00:00Z'),/daily_attack_used/);
 });
 await check('random plans are valid, varied and independent of the attacking plan',async()=>{
- const plans=[];for(let i=0;i<30;i++){const p=(await db.query('select duel_private.random_plan() as plan')).rows[0].plan;assert.equal(p.length,5);assert.equal(p.reduce((a,b)=>a+b,0),12);assert.equal(p.every(n=>n>=0&&n<=5),true);plans.push(JSON.stringify(p));}
+ const plans=[];for(let i=0;i<30;i++){const p=(await db.query('select duel_private.random_plan() as plan')).rows[0].plan;assert.equal(p.length,5);assert.equal(p.reduce((a,b)=>a+b,0),12);assert.equal(p.every(n=>n>=0&&n<=12),true);plans.push(JSON.stringify(p));}
  assert.ok(new Set(plans).size>1);
 });
 await check('automatic defence can win; the server never awards a default win to the attacker',async()=>{
@@ -148,6 +149,27 @@ await check('the season ending earlier than 24 hours refunds instead of forcing 
 });
 await check('new internal random and settlement helpers are inaccessible to anonymous clients',async()=>{
  for(const signature of ['duel_private.random_plan()','duel_private.tick(timestamptz)','duel_private.settle(uuid,timestamptz)','duel_private.plan(jsonb)','duel_private.project(text,timestamptz)']){const r=await db.query("select has_function_privilege('anon',$1,'execute') as allowed",[signature]);assert.equal(r.rows[0].allowed,false);}
+});
+await check('uncapped launch and defence score and pay once, with all twelve allowed on any island',async()=>{
+ const r=await launch('jiet','dad',100,OFFICIAL,[0,0,0,0,12]);
+ const key=randomUUID();const s=await rpc('dad','lock',{id:r.selected,plan:[3,3,3,3,0]},OFFICIAL,key);
+ const m=s.matches.find(m=>m.id===r.selected);assert.deepEqual(m.aPlan,[0,0,0,0,12]);assert.equal(m.aScore,5);assert.equal(m.bScore,10);assert.equal(m.winner,'dad');
+ await rpc('dad','lock',{id:r.selected,plan:[3,3,3,3,0]},OFFICIAL,key);assert.equal((await rpc('dad')).players.find(p=>p.id==='dad').gold,1100);
+ for(let i=0;i<5;i++){const plan=[0,0,0,0,0];plan[i]=12;assert.deepEqual((await db.query('select duel_private.plan($1::jsonb) as plan',[JSON.stringify(plan)])).rows[0].plan,plan);}
+});
+await check('uncapped validation still rejects negatives, fractions, nulls, huge entries and wrong totals',async()=>{
+ for(const plan of [[13,0,0,0,0],[-1,1,0,0,12],[6,6,0,0,1],[6,5,0,0,0],[12,null,0,0,0],[11.5,0.5,0,0,0],[99999999999999,0,0,0,0]])await assert.rejects(()=>launch('jiet','dad',100,OFFICIAL,plan),/invalid_plan/);
+});
+await check('legacy invitations can also lock more than five shots after upgrade',async()=>{
+ const r=(await db.query('select duel_private.run_v1($1,$2,$3::jsonb,$4::uuid,$5::timestamptz) as s',['jiet','invite',JSON.stringify({target:'dad',stake:100}),randomUUID(),OFFICIAL])).rows[0].s;
+ await rpc('dad','accept',{id:r.selected});await rpc('jiet','lock',{id:r.selected,plan:[0,0,0,0,12]});
+ const s=await rpc('dad','lock',{id:r.selected,plan:[3,3,3,3,0]});assert.equal(s.matches.find(m=>m.id===r.selected).winner,'dad');
+});
+await check('bot and saved automatic defence use the expanded plan space',async()=>{
+ await db.query('select setseed(0.25)');let expanded=false;
+ for(let i=0;i<50;i++){const p=(await db.query('select duel_private.random_plan() as plan')).rows[0].plan;assert.equal(p.reduce((a,b)=>a+b,0),12);if(p.some(n=>n>5))expanded=true;}
+ assert.equal(expanded,true);
+ const r=await launch('jiet','bot',0,PRACTICE,[12,0,0,0,0],randomUUID(),true);assert.equal(r.matches.find(m=>m.id===r.selected).status,'complete');
 });
 console.log(passed+' total PostgreSQL integration checks passed. No live database was used.');
 await db.close();

@@ -13,7 +13,7 @@ export default function DuelTour({ onFinish, practice }: Props) {
   const titles = [say("五岛夺宝", "Five islands"), say("分配12枚炮弹", "Arrange 12 shots"), say("锁定，再揭晓", "Lock. Then reveal.")];
   const lines = [
     say("炮弹多，就拿下该岛分数。", "More shots wins that island’s points."),
-    say("每岛0–5枚，总共12枚。", "0–5 shots per island. 12 in total."),
+    say("12枚自由分配，无单岛上限。", "12 shots total. Split them however you like."),
     say("锁定进攻，24小时内防守。", "Lock your attack. Defend within 24h."),
   ];
   return (
@@ -23,7 +23,7 @@ export default function DuelTour({ onFinish, practice }: Props) {
       </div>
       <div className="duel-tour-visual" aria-hidden="true">
         {step === 2 ? <div className="duel-tour-locks"><span>🔒</span><b>⚔️</b><span>🔒</span></div> :
-          <div className="duel-tour-islands">{DUEL_ICONS.map((icon, i) => <div key={i}><span>{icon}</span><strong>{step === 0 ? i + 1 : [0, 1, 3, 3, 5][i]}</strong><small>{step === 0 ? say("分", "pts") : "💣"}</small></div>)}</div>}
+          <div className="duel-tour-islands">{DUEL_ICONS.map((icon, i) => <div key={i}><span>{icon}</span><strong>{step === 0 ? i + 1 : [0, 1, 2, 3, 6][i]}</strong><small>{step === 0 ? say("分", "pts") : "💣"}</small></div>)}</div>}
       </div>
       <div className="duel-tour-copy" aria-live="polite">
         <h3>{titles[step]}</h3>
