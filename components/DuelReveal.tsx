@@ -4,6 +4,8 @@ import { DUEL_ICONS, type DuelMatch } from "@/lib/duel";
 import { initialReveal, revealReducer } from "@/lib/duelReveal";
 import { people } from "@/lib/trip";
 import { Avatar, useApp } from "./common";
+import PkScoreboard from "./PkScoreboard";
+import PkRoundHistory from "./PkRoundHistory";
 const NAMES=[{zh:"贝壳海滩",en:"Shell Shore"},{zh:"棕榈岛",en:"Palm Haven"},{zh:"珊瑚湾",en:"Coral Cove"},{zh:"骷髅礁",en:"Skull Rock"},{zh:"皇冠岛",en:"Crown Island"}];
 export function Ship({id,side,firing}:{id:string;side:"left"|"right";firing:boolean}) {
  const captain=people.find(x=>x.id===id);
@@ -31,7 +33,7 @@ export default function DuelReveal({match:c,onDone,startAtFinal=false}:{match:Du
  const roundWinner=ap[frame.round]>bp[frame.round]?c.a:bp[frame.round]>ap[frame.round]?c.b:null;
  const won=c.winner===person?.id,winningPerson=people.find(x=>x.id===c.winner);
  return <section className="duel-cinema" aria-label={say("对决揭晓","Duel reveal")}>
-  <div className="duel-cinema-score"><div><span>{name(c.a)}</span><strong key={`a-${sa}`}>{sa}</strong></div><b>⚔️</b><div><span>{name(c.b)}</span><strong key={`b-${sb}`}>{sb}</strong></div></div>
+  {c.mode==='live'?<PkScoreboard a={c.a} b={c.b} scoreA={sa} scoreB={sb} round={final?5:frame.round+1}/>:<div className="duel-cinema-score"><div><span>{name(c.a)}</span><strong key={`a-${sa}`}>{sa}</strong></div><b>⚔️</b><div><span>{name(c.b)}</span><strong key={`b-${sb}`}>{sb}</strong></div></div>}
   {!final?<>
    <div className="duel-round-heading"><small>{say("第","ROUND")} {frame.round+1} / 5</small><h2>{p(NAMES[frame.round])}</h2></div>
    <div className={`duel-sea-stage phase-${frame.phase}`} key={frame.round}>
@@ -54,5 +56,6 @@ export default function DuelReveal({match:c,onDone,startAtFinal=false}:{match:Du
    {c.autoDefended&&<p className="duel-caption">🤖 {say("超时自动防守","Automatic defence after timeout")}</p>}
    <button className="pirate-gold-button" onClick={onDone}>{say("返回海湾","Back to the cove")} →</button>
   </div>}
+  {final&&c.mode==='live'&&<PkRoundHistory match={c}/>}
  </section>;
 }

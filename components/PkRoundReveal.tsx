@@ -4,16 +4,18 @@ import {DUEL_ICONS,type DuelMatch,type PkRound} from "@/lib/duel";
 import {people} from "@/lib/trip";
 import {useApp} from "./common";
 import {Ship} from "./DuelReveal";
+import {pkRoundPoints,pkScoreAt} from "@/lib/pk";
+import PkScoreboard from "./PkScoreboard";
 export default function PkRoundReveal({match:m,round:r,onNext}:{match:DuelMatch;round:PkRound;onNext:()=>void}){
  const {lang,p}=useApp(),say=(zh:string,en:string)=>lang==="zh"?zh:en;
  const [phase,setPhase]=useState("intro");
  useEffect(()=>{if(matchMedia('(prefers-reduced-motion: reduce)').matches){setPhase('result');return;}let fire:ReturnType<typeof setTimeout>,result:ReturnType<typeof setTimeout>;fire=setTimeout(()=>setPhase(p=>p==='intro'?'fire':p),650);result=setTimeout(()=>setPhase('result'),1600);return()=>{clearTimeout(fire);clearTimeout(result);};},[]);
  const name=(id:string)=>id==="bot"?say("练习船长","Captain Bot"):p(people.find(x=>x.id===id)??{zh:id,en:id});
  const winner=r.a>r.b?m.a:r.b>r.a?m.b:null;
- const score=(who:'a'|'b')=>(m.rounds??[]).filter(x=>phase==='result'?x.n<=r.n:x.n<r.n).reduce((sum,x)=>sum+((who==='a'?x.a>x.b:x.b>x.a)?x.n:0),0);
+ const scored=phase==='result',[scoreA,scoreB]=pkScoreAt(m.rounds??[],scored?r.n:r.n-1),[awardA,awardB]=pkRoundPoints(r);
  return <section className="duel-cinema" aria-label={say("回合揭晓","Round reveal")}>
-  <div className="duel-cinema-score"><div><span>{name(m.a)}</span><strong>{score('a')}</strong></div><b>⚔️</b><div><span>{name(m.b)}</span><strong>{score('b')}</strong></div></div>
-  <div className="duel-round-heading"><small>{say("第","ROUND")} {r.n} / 5</small><h2>{DUEL_ICONS[r.n-1]} · {r.n} {say("分","points")}</h2></div>
+  <PkScoreboard a={m.a} b={m.b} scoreA={scoreA} scoreB={scoreB} round={r.n} awardA={scored?awardA:0} awardB={scored?awardB:0}/>
+  <div className="duel-round-heading"><h2>{DUEL_ICONS[r.n-1]} · {r.n} {say("分","points")}</h2></div>
   <div className={`duel-sea-stage phase-${phase}`}>
    <div className="duel-sea-ripple ripple-one"/><div className="duel-sea-ripple ripple-two"/>
    <Ship id={m.a} side="left" firing={phase==='fire'}/><Ship id={m.b} side="right" firing={phase==='fire'}/>

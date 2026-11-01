@@ -10,6 +10,8 @@ import {Avatar,useApp} from "./common";
 import LegacyPirateDuel from "./LegacyPirateDuel";
 import DuelReveal from "./DuelReveal";
 import PkRoundReveal from "./PkRoundReveal";
+import PkScoreboard from "./PkScoreboard";
+import PkRoundHistory from "./PkRoundHistory";
 type Props={duel:ReturnType<typeof useDuel>;onGoldChange:()=>void;onTour:()=>void};
 export default function PirateDuel({duel,onGoldChange,onTour}:Props){
  const {lang,p,person}=useApp(),say=(zh:string,en:string)=>lang==='zh'?zh:en,me=person?.id??'';
@@ -55,14 +57,14 @@ export default function PirateDuel({duel,onGoldChange,onTour}:Props){
   }else if(m.status==='active'){
    const locked=own?m.aReady:m.bReady;
    const change=(n:number)=>{setShot(n);writeLocal(draftKey,n);};
-   content=<><div className="duel-cinema-score"><div><span>{name(m.a)}</span><strong>{m.aScore??0}</strong></div><b>⚔️</b><div><span>{name(m.b)}</span><strong>{m.bScore??0}</strong></div></div>
-    <div className="duel-round-heading"><small>{say('第','ROUND')} {round} / 5</small><h2>{DUEL_ICONS[round-1]} · {round} {say('分','points')}</h2></div>
+   content=<><PkScoreboard a={m.a} b={m.b} scoreA={m.aScore??0} scoreB={m.bScore??0} round={round}/>
+    <div className="duel-round-heading"><h2>{DUEL_ICONS[round-1]} · {round} {say('分','points')}</h2></div>
     <div className="duel-map pk-round-map">{DUEL_ICONS.map((icon,i)=><div key={i} className={i+1===round?'pk-current':i+1<round?'pk-done':''}><span>{icon}</span><small>{i+1} {say('分','pts')}</small></div>)}</div>
     {locked?<div className="pk-locked"><span>🔒</span><h2>{say('已锁定','Locked')}</h2><p>💣 {m.yourShot??0} · {say('等待对方出招','Waiting for the other captain')}</p><small>{say('离开后也能回来继续。','You can leave and return here.')}</small></div>:<div className="pk-shot-editor"><p>💣 <strong>{budget}</strong> {say('剩余炮弹','shots remaining')}</p><div className="pk-shot-stepper"><button aria-label={say('减少炮弹','Fewer shots')} disabled={duel.busy||shot===0||round===5} onClick={()=>change(shot-1)}>−</button><output aria-label={say('本回合炮弹','Shots this round')}>{shot}</output><button aria-label={say('增加炮弹','More shots')} disabled={duel.busy||shot>=budget||round===5} onClick={()=>change(shot+1)}>+</button></div>
      <p className="duel-caption">{round===5?say('最后一回合，用完剩余炮弹','Final round · Use your remaining shots'):say(`出招后剩余 ${budget-shot} 枚`,`After this round: ${budget-shot} left`)}</p>
      {button(duel.busy?say('正在锁定…','Locking…'):say(`锁定 ${shot} 枚炮弹`,`Lock ${shot} shots`),()=>void act('shot',{id:m.id,round,shot}),!validPkShot(shot,budget,round))}</div>}
     <p className="duel-caption pk-round-deadline">⏳ {when(m.expires)} · {say('超时自动出招','Automatic shots after deadline')}</p>
-    {(m.rounds??[]).length>0&&<div className="pk-round-history">{m.rounds!.map(r=><button key={r.n} onClick={()=>{setSeen(r.n-1);writeLocal(seenKey,r.n-1);}}>{DUEL_ICONS[r.n-1]} <span>{r.a} : {r.b}</span>{r.autoA||r.autoB?' 🤖':''}</button>)}</div>}
+    <PkRoundHistory match={m} onReplay={n=>{setSeen(n-1);writeLocal(seenKey,n-1);}}/>
    </>;
   }else content=<div className="duel-empty"><span>⚓</span><h2>{m.status==='cancelled'?say('邀请已取消','Challenge cancelled'):say('邀请已过期','Challenge expired')}</h2><p>{say('没有扣金币','No gold spent')}</p>{button(say('返回PK','Back to PK'),()=>go(null))}</div>;
  }else{
