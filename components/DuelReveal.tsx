@@ -5,16 +5,16 @@ import { initialReveal, revealReducer } from "@/lib/duelReveal";
 import { people } from "@/lib/trip";
 import { Avatar, useApp } from "./common";
 const NAMES=[{zh:"贝壳海滩",en:"Shell Shore"},{zh:"棕榈岛",en:"Palm Haven"},{zh:"珊瑚湾",en:"Coral Cove"},{zh:"骷髅礁",en:"Skull Rock"},{zh:"皇冠岛",en:"Crown Island"}];
-function Ship({id,side,firing}:{id:string;side:"left"|"right";firing:boolean}) {
+export function Ship({id,side,firing}:{id:string;side:"left"|"right";firing:boolean}) {
  const captain=people.find(x=>x.id===id);
  return <div className={`duel-ship duel-ship-${side} ${firing?"is-firing":""}`}>
   <svg viewBox="0 0 150 145" aria-hidden="true"><path d="M75 12V112" stroke="#d5b56e" strokeWidth="4"/><path d="M69 21L25 88H69Z" fill="#f7e4b0"/><path d="M82 30L119 88H82Z" fill="#d7c58f"/><path d="M16 106Q74 127 137 105L119 132Q75 148 34 130Z" fill="#6e442a" stroke="#cda35b" strokeWidth="3"/><path d="M30 117H125" stroke="#d0a05c" strokeWidth="3"/><circle cx="55" cy="126" r="4" fill="#112f32"/><circle cx="76" cy="130" r="4" fill="#112f32"/><circle cx="96" cy="127" r="4" fill="#112f32"/><path d="M20 141Q65 131 137 141" stroke="#a5e3dc" strokeOpacity=".5" strokeWidth="3" fill="none"/></svg>
   <div className="duel-ship-captain">{captain?<Avatar person={captain} size={39}/>:<span>🤖</span>}</div>
  </div>;
 }
-export default function DuelReveal({match:c,onDone}:{match:DuelMatch;onDone:()=>void}){
+export default function DuelReveal({match:c,onDone,startAtFinal=false}:{match:DuelMatch;onDone:()=>void;startAtFinal?:boolean}){
  const {lang,person,p}=useApp(),say=(zh:string,en:string)=>lang==="zh"?zh:en;
- const [frame,dispatch]=useReducer(revealReducer,initialReveal);
+ const [frame,dispatch]=useReducer(revealReducer,startAtFinal?{round:4,phase:"final"}:initialReveal);
  const [reduced,setReduced]=useState(false),[visible,setVisible]=useState(true);
  useEffect(()=>{const mq=matchMedia("(prefers-reduced-motion: reduce)");const change=()=>{setReduced(mq.matches);if(mq.matches)dispatch({type:"reduce"});};change();mq.addEventListener("change",change);const visibility=()=>setVisible(!document.hidden);visibility();document.addEventListener("visibilitychange",visibility);return()=>{mq.removeEventListener("change",change);document.removeEventListener("visibilitychange",visibility);};},[]);
  useEffect(()=>{

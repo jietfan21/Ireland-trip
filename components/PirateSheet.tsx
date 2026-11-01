@@ -62,11 +62,11 @@ export default function PirateSheet({ onClose, onLang }: { onClose: () => void; 
   const [today, setToday] = useState(() => todayOverride(location.search, location.hostname) ?? irelandToday());
   const game = usePirate(me, today);
   const duel = useDuel(me);
-  const tourKey = `ie.duel.tour.v1.${me}`;
+  const tourKey = `ie.duel.tour.pk.v1.${me}`;
   const [screen, setScreen] = useState<"wheel" | "duel">(() => me && readLocal<boolean>(tourKey, false) !== true ? "duel" : "wheel");
   const [duelTour, setDuelTour] = useState(() => Boolean(me && readLocal<boolean>(tourKey, false) !== true));
   useEffect(() => {
-    const firstVisit = Boolean(me && readLocal<boolean>(`ie.duel.tour.v1.${me}`, false) !== true);
+    const firstVisit = Boolean(me && readLocal<boolean>(`ie.duel.tour.pk.v1.${me}`, false) !== true);
     setScreen(firstVisit ? "duel" : "wheel");
     setDuelTour(firstVisit);
   }, [me]);
