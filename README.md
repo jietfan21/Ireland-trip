@@ -41,28 +41,26 @@ Live data (map tiles from OpenFreeMap, weather from Open-Meteo, rates from Frank
 the app itself is cached for patchy signal.
 
 
-## Treasure Duel
+## Live PK
 
-Clover Cove → **Duel** uses the same dark/gold UI and family avatars. First visits open Duel with a short skippable tour, remembered per captain per device. 31 October 2026 is free practice; official gold attacks open at **00:00 Europe/Dublin on 1 November**. Existing wheel gold is preserved.
+Clover Cove → **Duel / Live PK** keeps the bilingual family-name trust model (no login) and virtual gold only. There are no payments or cash-out. New challenges use a live, resumable room; previous duels and outcomes remain available under **Previous duels**.
 
-### Attack and defend
+Choose a captain and stake, send the invitation, and ask them verbally to open PK and join. The invitation/lobby lasts up to 24 hours and can be cancelled before play. No gold or daily allowance is used until **both players tap Ready**. At that point both stakes are checked and reserved atomically. One official outgoing start per Dublin day; unlimited incoming battles. Multiple battles can wait for responses without blocking a captain’s own daily start. Bot practice is free, follows the same five-round flow and never uses the official allowance.
 
-Choose an opponent and 5/10/20% stake (custom: multiples of 10, capped at 20% of the smaller available balance), arrange all **12 shots** across five islands (no per-island cap), and launch. The attacker’s plan locks and both stakes reserve in one transaction. There is no acceptance/decline step and no cancellation for new attacks. One official outgoing attack per Dublin day is counted on launch; incoming attacks are unlimited and do not consume the defender’s own attack. Multiple captains may target the same person.
+Five islands are worth 1, 2, 3, 4 and 5 points. Each captain has **12 shots for the whole match, with no per-island cap**. Choose only the current round. Choices lock privately and reveal together when both are saved. Players then choose their next move with the previous results visible. The final round uses the remaining budget. Higher shots wins island points; tied islands award neither side points. Highest total wins the pot; a draw refunds both stakes.
 
-The defender has 24 hours to lock a plan. If absent, the server chooses one of the 1,820 valid allocations uniformly, saves it once, and resolves the duel normally. Automatic defence can win. No additional shield penalty is applied. Retries or refreshes cannot reroll or repay. Staked coins stay in wealth rankings and are held outside wheel attacks.
+Each new round gets **24 hours** from when it opens. Disconnecting has no immediate penalty: return to the saved match and choice. A private per-minute timer saves random valid shots only for missing choices after the deadline, reveals the round and opens a fresh 24-hour window. Late submissions see the saved result and cannot reroll it or accidentally submit to the next round. An unattended match can take several days. New challenges close at 00:00 Dublin on 8 November; already-started PKs retain full round windows and can finish afterward. Unjoined invitations never cross that new-challenge cutoff.
 
-Practice attacks never change gold and do not consume the official allowance. Bot practice is unlimited, even while a human practice attack waits. Unfinished practice is refunded/closed at the official-start boundary. At the trip’s end (00:00 Dublin on 8 November), incomplete attacks with less than a full 24-hour response window are refunded rather than auto-defended early. Older optional invitations retain their original acceptance/refund rules.
+Stakes remain 5/10/20% of the smaller available balance; custom multiples of 10 are capped at 20%. Staked gold stays in wealth rankings and outside wheel attacks. Existing balances are preserved. Practice on 31 October and free bot practice never change gold. Official starts opened on 1 November.
 
-Results use a five-round 2D sea-battle reveal with avatars on ships, simultaneous cannon counts, island capture and running scores. **Next round** advances immediately; **Skip to result** shows the saved final result. No reveal control calls a gold mutation. Reduced-motion users get manual, static round results. Hidden browser tabs pause the reveal. The same no-login/family-name trust model remains intentionally enabled for virtual game gold, with no payments or cash-out.
+### Deployment
 
-### Database and timer
+Apply the additive migrations in `supabase/migrations/` in order. Do not rerun the original destructive wheel installer. The new public RPC is `pirate_pk`; room, round and receipt tables are private with RLS and no client table grants. Internal clock/projection helpers are not callable by anonymous clients. The existing public `pirate_duel` permits finishing old matches but rejects new old-style launches with `update_required`.
 
-Apply the additive migrations in `supabase/migrations/` in order; do not re-run the destructive original wheel installer. Secret plans and replay receipts live in `duel_private`, which has no anonymous schema access. The public RPC remains `pirate_duel`. New clients use `launch`, `lock`, and `state`; old invitation creation is rejected with `update_required`. Existing legacy invitations still work.
-
-The latest migration enables `pg_cron` and runs a private settlement function every minute. The timer settles overdue attacks even with no open phones. API reads also settle due attacks. Both paths use the same advisory lock and row order, so payout happens once. The scheduled job removes itself after the trip ends and all open matches are resolved. Private clock helpers cannot be called by anonymous clients.
+`clover-pk-round-timeouts` runs every minute and removes itself after the season has closed and all started rooms finish. Its shared advisory lock and ordered player locks match the existing game; scoring and payouts are transactional and exactly once. The old timer continues to finish legacy duels independently.
 
 ### Validation
 
-`npm run lint`, `npm test`, `npm run test:duel-db`, `npm run build`.
+Run `npm run lint`, `npm test`, `npm run test:duel-db`, `npm run test:pk-db`, and `npm run build`.
 
-The isolated PostgreSQL integration tests apply the original and upgrade migrations against synthetic 1,000-coin accounts using PGlite, never the live project. They cover reservations and gold conservation, forced launch, timer settlement, manual/late defence, no reroll, defender victory, unlimited incoming attacks, missing accounts, invalid plans, season cutoffs, legacy compatibility and keeping pending defences visible behind large practice histories. Reveal reducer tests cover stale timers, rapid Next/Skip and reduced motion.
+PostgreSQL integration checks use PGlite and fictional accounts, never the live database. PK coverage includes secret choices, remaining budgets, all-in moves, per-round deadlines, reconnect/late responses, no reroll or duplicate payout, readiness and balance races, invitation expiry, unlimited incoming matches, bot practice, season boundaries, legacy compatibility and private helper permissions.

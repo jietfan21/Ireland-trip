@@ -10,7 +10,8 @@
     "start": "npx serve out",
     "lint": "tsc --noEmit",
     "test": "node --test lib/*.test.ts",
-    "test:duel-db": "node scripts/test-duel-db.mjs"
+    "test:duel-db": "node scripts/test-duel-db.mjs",
+    "test:pk-db": "node scripts/test-pk-db.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

@@ -10,11 +10,11 @@ export default function DuelTour({ onFinish, practice }: Props) {
   const { lang } = useApp();
   const say = (zh: string, en: string) => lang === "zh" ? zh : en;
   const [step, setStep] = useState(0);
-  const titles = [say("五岛夺宝", "Five islands"), say("分配12枚炮弹", "Arrange 12 shots"), say("锁定，再揭晓", "Lock. Then reveal.")];
+  const titles = [say("五岛夺宝", "Five islands"), say("12枚炮弹，逐回合选择", "12 shots, one round at a time"), say("加入、准备、开战", "Join. Ready. Battle.")];
   const lines = [
     say("炮弹多，就拿下该岛分数。", "More shots wins that island’s points."),
-    say("12枚自由分配，无单岛上限。", "12 shots total. Split them however you like."),
-    say("锁定进攻，24小时内防守。", "Lock your attack. Defend within 24h."),
+    say("总共12枚，每回合自由决定用几枚。", "12 shots total. Choose how many each round."),
+    say("双方锁定后揭晓，每回合可等24小时。", "Both lock, then reveal. 24 hours per round."),
   ];
   return (
     <div className="duel-tour">
@@ -28,7 +28,7 @@ export default function DuelTour({ onFinish, practice }: Props) {
       <div className="duel-tour-copy" aria-live="polite">
         <h3>{titles[step]}</h3>
         <p>{lines[step]}</p>
-        {step === 2 && <small>{practice ? say("练习不扣金币", "Practice uses no gold") : say("超时随机防守 · 总分高者赢", "Timeout: random defence · Highest score wins")}</small>}
+        {step === 2 && <small>{practice ? say("练习不扣金币", "Practice uses no gold") : say("超时自动出招 · 总分高者赢", "Timeout: automatic shots · Highest score wins")}</small>}
       </div>
       <div className="duel-tour-actions">
         <button className="pirate-secondary-button" onClick={step === 0 ? onFinish : () => setStep(n => n - 1)}>{step === 0 ? say("跳过", "Skip") : say("上一步", "Back")}</button>
