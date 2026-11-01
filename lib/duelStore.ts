@@ -19,7 +19,7 @@ export function useDuel(me:string|null){
  const action=useCallback(async(kind:string,payload:Record<string,unknown>={})=>{
   if(lock.current||!me)return null;const db=supabase();if(!db){setError("offline");return null;}lock.current=true;++revision.current;setBusy(true);setError("");
   const signature=JSON.stringify([me,kind,payload]);const key=pending.current?.signature===signature?pending.current.key:requestKey();pending.current={signature,key};
-  try{const call=()=>timed(db.rpc("pirate_pk",{p_player:me,p_action:kind,p_payload:payload,p_key:key}));let r;try{r=await call();}catch{r=await call();}if(r.error){pending.current=null;throw r.error;}pending.current=null;if(mounted.current&&current.current===me)setData(r.data as DuelState);return r.data as DuelState;}
+  try{const call=()=>timed(db.rpc("pirate_pk",{p_player:me,p_action:kind,p_payload:{...payload,rulesVersion:2},p_key:key}));let r;try{r=await call();}catch{r=await call();}if(r.error){pending.current=null;throw r.error;}pending.current=null;if(mounted.current&&current.current===me)setData(r.data as DuelState);return r.data as DuelState;}
   catch(e){if(mounted.current&&current.current===me)setError((e as {message?:string}).message??"offline");void refresh(true);return null;}
   finally{lock.current=false;if(mounted.current)setBusy(false);}
  },[me,refresh]);

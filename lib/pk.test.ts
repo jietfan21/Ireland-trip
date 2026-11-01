@@ -5,11 +5,17 @@ test('PK spends only its remaining budget, keeps no per-island cap, and uses the
 });
 
 test('round history distinguishes awarded points from shot counts and gives ties zero',()=>{
- assert.deepEqual(pkRoundPoints({n:3,a:1,b:7}),[0,3]);
- assert.deepEqual(pkRoundPoints({n:4,a:9,b:2}),[4,0]);
+ assert.deepEqual(pkRoundPoints({n:3,a:1,b:7}),[0,1]);
+ assert.deepEqual(pkRoundPoints({n:4,a:9,b:2}),[1,0]);
  assert.deepEqual(pkRoundPoints({n:5,a:3,b:3}),[0,0]);
 });
 test('replaying a round never reveals scores from later completed rounds',()=>{
  const rounds=[{n:1,a:6,b:1,autoA:false,autoB:false},{n:2,a:0,b:8,autoA:false,autoB:false},{n:3,a:0,b:0,autoA:false,autoB:false},{n:4,a:0,b:1,autoA:false,autoB:false},{n:5,a:6,b:2,autoA:false,autoB:false}];
- assert.deepEqual(pkScoreAt(rounds,0),[0,0]);assert.deepEqual(pkScoreAt(rounds,1),[1,0]);assert.deepEqual(pkScoreAt(rounds,2),[1,2]);assert.deepEqual(pkScoreAt(rounds,3),[1,2]);assert.deepEqual(pkScoreAt(rounds,5),[6,6]);
+ assert.deepEqual(pkScoreAt(rounds,0),[0,0]);assert.deepEqual(pkScoreAt(rounds,1),[1,0]);assert.deepEqual(pkScoreAt(rounds,2),[1,1]);assert.deepEqual(pkScoreAt(rounds,3),[1,1]);assert.deepEqual(pkScoreAt(rounds,5),[2,2]);
+});
+
+test('old battles retain weighted points while every new island is worth one',()=>{
+ for(let n=1;n<=5;n++){assert.deepEqual(pkRoundPoints({n,a:4,b:1}),[1,0]);assert.deepEqual(pkRoundPoints({n,a:4,b:1},'weighted'),[n,0]);}
+ const rounds=[{n:1,a:6,b:1,autoA:false,autoB:false},{n:2,a:0,b:8,autoA:false,autoB:false}];
+ assert.deepEqual(pkScoreAt(rounds,2,'weighted'),[1,2]);assert.deepEqual(pkScoreAt(rounds,2,'equal'),[1,1]);
 });
