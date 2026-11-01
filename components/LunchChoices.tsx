@@ -10,6 +10,7 @@ export default function LunchChoices({ date, options }: { date: string; options:
   const [choice, setChoice] = useState<string | null>(null);
   const key = `ireland-trip:lunch:${date}`;
   const roadTrip = date === "2026-11-01";
+  const dingleTownDay = date === "2026-11-02";
   const dayOfWeek = new Date(`${date}T12:00:00Z`).toLocaleDateString("en-IE", { weekday: "long", timeZone: "Europe/Dublin" });
 
   useEffect(() => {
@@ -30,10 +31,14 @@ export default function LunchChoices({ date, options }: { date: string; options:
     <Card>
       <h3 className="flex items-center gap-2 text-[18px] font-bold">
         <UtensilsCrossed size={21} className="text-shamrock" />
-        {lang === "zh" ? "午餐：七选一（7 人）" : "Lunch: pick one for seven"}
+        {dingleTownDay ? (lang === "zh" ? "午餐：在外吃或 Airbnb 自煮" : "Lunch: eat out or cook at Airbnb") : (lang === "zh" ? "午餐：七选一（7 人）" : "Lunch: pick one for seven")}
       </h3>
       <p className="mt-1 text-[14px] leading-snug text-sub">
-        {roadTrip
+        {dingleTownDay
+          ? (lang === "zh"
+            ? "可选餐厅或留在 Airbnb 自煮。周一餐厅可能提早关门，先确认营业与七人订位；市中心从住处步行可达。选择只存在这部手机。"
+            : "Choose a Dingle restaurant or cook at the Airbnb. Check Monday hours and book for seven if eating out. Town is walkable from home; your choice stays on this phone.")
+          : roadTrip
           ? (lang === "zh"
             ? "选一家，先确认周日营业与七人订位。餐厅遍布不同小镇，需开车前往；选择只存在这部手机。"
             : "Pick one and confirm Sunday opening and a table for seven. These are in different towns, so drive to your chosen restaurant. Saved on this phone only.")
@@ -54,10 +59,12 @@ export default function LunchChoices({ date, options }: { date: string; options:
                   <span className="block text-[13px] leading-snug text-sub">{p(o.food)}</span>
                 </span>
               </label>
+              {!o.name.startsWith("Airbnb lunch") && (
               <a href={maps} target="_blank" rel="noopener noreferrer" aria-label={lang === "zh" ? `在 Google 地图查看 ${o.name}` : `View ${o.name} on Google Maps`} className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-shamrock px-2.5 text-[13px] font-semibold text-shamrock">
                 <MapPin size={16} />
                 {lang === "zh" ? "导航" : "Map"}
               </a>
+              )}
             </div>
           );
         })}
