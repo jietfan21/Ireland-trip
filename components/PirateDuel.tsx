@@ -10,11 +10,14 @@ import {Avatar,useApp} from "./common";
 import LegacyPirateDuel from "./LegacyPirateDuel";
 import DuelReveal from "./DuelReveal";
 import PkRoundReveal from "./PkRoundReveal";
+import PkScoreboard from "./PkScoreboard";
+import PkRoundHistory from "./PkRoundHistory";
 type Props={duel:ReturnType<typeof useDuel>;onGoldChange:()=>void;onTour:()=>void};
 export default function PirateDuel({duel,onGoldChange,onTour}:Props){
  const {lang,p,person}=useApp(),say=(zh:string,en:string)=>lang==='zh'?zh:en,me=person?.id??'';
  const [view,setView]=useState<string|null>(null),[target,setTarget]=useState(''),[percent,setPercent]=useState(10),[custom,setCustom]=useState(''),[help,setHelp]=useState(false),[shot,setShot]=useState(0),[seen,setSeen]=useState(0);
  const data=duel.data,m=data?.matches.find(x=>x.id===view),mine=data?.players.find(x=>x.id===me);
+ const point=m?.scoring==='equal'?1:(m?.round??1);
  const own=m?.a===me,budget=m?(own?m.remainingA:m.remainingB)??12:12,round=m?.round??1;
  const draftKey=`ie.pk.shot.${me}.${m?.id}.${round}`,seenKey=`ie.pk.seen.${me}.${m?.id}`;
  useEffect(()=>{setView(null);},[me]);
@@ -55,28 +58,28 @@ export default function PirateDuel({duel,onGoldChange,onTour}:Props){
   }else if(m.status==='active'){
    const locked=own?m.aReady:m.bReady;
    const change=(n:number)=>{setShot(n);writeLocal(draftKey,n);};
-   content=<><div className="duel-cinema-score"><div><span>{name(m.a)}</span><strong>{m.aScore??0}</strong></div><b>⚔️</b><div><span>{name(m.b)}</span><strong>{m.bScore??0}</strong></div></div>
-    <div className="duel-round-heading"><small>{say('第','ROUND')} {round} / 5</small><h2>{DUEL_ICONS[round-1]} · {round} {say('分','points')}</h2></div>
-    <div className="duel-map pk-round-map">{DUEL_ICONS.map((icon,i)=><div key={i} className={i+1===round?'pk-current':i+1<round?'pk-done':''}><span>{icon}</span><small>{i+1} {say('分','pts')}</small></div>)}</div>
+   content=<>{m.scoring!=='equal'&&<p className="duel-caption">{say('此前已开始 · 沿用原计分','Already started · Original scoring')}</p>}<PkScoreboard a={m.a} b={m.b} scoreA={m.aScore??0} scoreB={m.bScore??0} round={round}/>
+    <div className="duel-round-heading"><h2>{DUEL_ICONS[round-1]} · {point} {say('分',point===1?'point':'points')}</h2></div>
+    <div className="duel-map pk-round-map">{DUEL_ICONS.map((icon,i)=><div key={i} className={i+1===round?'pk-current':i+1<round?'pk-done':''}><span>{icon}</span><small>{m.scoring==='equal'?1:i+1} {say('分','pts')}</small></div>)}</div>
     {locked?<div className="pk-locked"><span>🔒</span><h2>{say('已锁定','Locked')}</h2><p>💣 {m.yourShot??0} · {say('等待对方出招','Waiting for the other captain')}</p><small>{say('离开后也能回来继续。','You can leave and return here.')}</small></div>:<div className="pk-shot-editor"><p>💣 <strong>{budget}</strong> {say('剩余炮弹','shots remaining')}</p><div className="pk-shot-stepper"><button aria-label={say('减少炮弹','Fewer shots')} disabled={duel.busy||shot===0||round===5} onClick={()=>change(shot-1)}>−</button><output aria-label={say('本回合炮弹','Shots this round')}>{shot}</output><button aria-label={say('增加炮弹','More shots')} disabled={duel.busy||shot>=budget||round===5} onClick={()=>change(shot+1)}>+</button></div>
      <p className="duel-caption">{round===5?say('最后一回合，用完剩余炮弹','Final round · Use your remaining shots'):say(`出招后剩余 ${budget-shot} 枚`,`After this round: ${budget-shot} left`)}</p>
      {button(duel.busy?say('正在锁定…','Locking…'):say(`锁定 ${shot} 枚炮弹`,`Lock ${shot} shots`),()=>void act('shot',{id:m.id,round,shot}),!validPkShot(shot,budget,round))}</div>}
     <p className="duel-caption pk-round-deadline">⏳ {when(m.expires)} · {say('超时自动出招','Automatic shots after deadline')}</p>
-    {(m.rounds??[]).length>0&&<div className="pk-round-history">{m.rounds!.map(r=><button key={r.n} onClick={()=>{setSeen(r.n-1);writeLocal(seenKey,r.n-1);}}>{DUEL_ICONS[r.n-1]} <span>{r.a} : {r.b}</span>{r.autoA||r.autoB?' 🤖':''}</button>)}</div>}
+    <PkRoundHistory match={m} onReplay={n=>{setSeen(n-1);writeLocal(seenKey,n-1);}}/>
    </>;
   }else content=<div className="duel-empty"><span>⚓</span><h2>{m.status==='cancelled'?say('邀请已取消','Challenge cancelled'):say('邀请已过期','Challenge expired')}</h2><p>{say('没有扣金币','No gold spent')}</p>{button(say('返回PK','Back to PK'),()=>go(null))}</div>;
  }else{
   const live=data.matches.filter(x=>x.mode==='live'),ongoing=live.filter(duelActive),history=live.filter(x=>x.status==='complete');
   const card=(c:DuelMatch)=>{const id=c.a===me?c.b:c.a,label=c.status==='pending'?c.a===me?say('等待加入','Waiting to join'):say('邀请你PK · 加入','Challenges you · Join'):c.status==='lobby'?say('进入房间','Enter room'):c.status==='active'?say(`第${c.round}回合 · 继续`,`Round ${c.round} · Continue`):say('查看战果','Results');return <button className="duel-match" key={c.id} onClick={()=>go(c.id)}>{captain(id,36)}<span><strong>{name(id)}</strong><small>{c.practice?say('练习','Practice'):`🪙 ${c.stake}`} · {label}</small></span><b>›</b></button>;};
   content=<><div className="duel-home-title"><h2>{say('实时PK','Live PK')}</h2><button className="pirate-icon-button" aria-label={say('玩法','Rules')} aria-expanded={help} onClick={()=>setHelp(v=>!v)}><HelpCircle size={19}/></button></div>
-   {help&&<div className="duel-help"><button className="duel-tour-replay" onClick={onTour}>{say('简明教程 ↗','Quick tour ↗')}</button>{say('邀请、加入、双方准备后开战。5回合共12枚炮弹，无单岛上限。每回合双方秘密出招，一起揭晓，再决定下一回合。每回合等24小时，超时自动出招；断线可回来继续。每天进攻1次，加入别人的PK不限。邀请过期不扣金币。','Challenge, join, then both ready up. Five rounds, 12 shots total, no island cap. Both choose secretly; reveal together, then react next round. Each round waits 24h before automatic shots. Reconnect to continue. One daily attack; unlimited incoming PKs. Expired invitations cost no gold.')}</div>}
+   {help&&<div className="duel-help"><button className="duel-tour-replay" onClick={onTour}>{say('简明教程 ↗','Quick tour ↗')}</button>{say('邀请、加入、双方准备后开战。5回合共12枚炮弹，无单岛上限，每回合1分。每回合双方秘密出招，一起揭晓，再决定下一回合。每回合等24小时，超时自动出招；断线可回来继续。每天进攻1次，加入别人的PK不限。邀请过期不扣金币。','Challenge, join, then both ready up. Five rounds, 12 shots total, no island cap. Each round is worth 1 point. Both choose secretly; reveal together, then react next round. Each round waits 24h before automatic shots. Reconnect to continue. One daily attack; unlimited incoming PKs. Expired invitations cost no gold.')}</div>}
    {ongoing.map(card)}
    {!data.ended&&button(data.used?say('今日进攻已用','Daily attack used'):say('邀请家人PK','Challenge a captain'),()=>{setTarget(people.find(x=>x.id!==me)?.id??'');setCustom('');go('new');},Boolean(data.used||ongoing.some(x=>x.a===me&&x.b!=='bot'&&(x.status==='pending'||x.status==='lobby'))))}
-   <p className="duel-caption">{say('5回合 · 共12枚 · 每回合24小时','5 rounds · 12 shots total · 24h per round')}</p>
+   <p className="duel-caption">{say('5回合 · 每回合1分 · 共12枚炮弹','5 rounds · 1 point each · 12 shots total')}</p>
    {!data.ended&&button(say('免费练习 🤖','Free practice 🤖'),()=>void act('invite',{target:'bot',stake:0,practice:true}),ongoing.some(x=>x.a===me&&x.b==='bot'&&(x.status==='pending'||x.status==='lobby')),true)}
    {history.length>0&&<><h3 className="duel-history-title">{say('战果','Results')}</h3>{history.slice(0,5).map(card)}</>}
    {legacy.length>0&&button(say('之前的对决','Previous duels'),()=>go('legacy'),false,true)}
   </>;
  }
- return <main className="pirate-duel">{view&&view!=='legacy'&&<button className="duel-back" onClick={()=>go(null)} disabled={duel.busy}><ArrowLeft size={16}/>{say('返回','Back')}</button>}{notice&&<div className="pirate-notice" role="alert">{notice}<button onClick={()=>void duel.refresh()}>{say('刷新','Refresh')}</button></div>}{content}</main>;
+ return <main className="pirate-duel">{view&&view!=='legacy'&&<button className="duel-back" onClick={()=>go(null)} disabled={duel.busy}><ArrowLeft size={16}/>{say('返回','Back')}</button>}{notice&&<div className="pirate-notice" role="alert">{notice}<button onClick={()=>duel.error==='update_required'?window.location.reload():void duel.refresh()}>{say('刷新','Refresh')}</button></div>}{content}</main>;
 }

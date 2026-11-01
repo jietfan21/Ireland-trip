@@ -47,11 +47,13 @@ Clover Cove → **Duel / Live PK** keeps the bilingual family-name trust model (
 
 Choose a captain and stake, send the invitation, and ask them verbally to open PK and join. The invitation/lobby lasts up to 24 hours and can be cancelled before play. No gold or daily allowance is used until **both players tap Ready**. At that point both stakes are checked and reserved atomically. One official outgoing start per Dublin day; unlimited incoming battles. Multiple battles can wait for responses without blocking a captain’s own daily start. Bot practice is free, follows the same five-round flow and never uses the official allowance.
 
-Five islands are worth 1, 2, 3, 4 and 5 points. Each captain has **12 shots for the whole match, with no per-island cap**. Choose only the current round. Choices lock privately and reveal together when both are saved. Players then choose their next move with the previous results visible. The final round uses the remaining budget. Higher shots wins island points; tied islands award neither side points. Highest total wins the pot; a draw refunds both stakes.
+Each of the five islands is worth **1 point** in new PKs. Each captain has **12 shots for the whole match, with no per-island cap**. Choose only the current round. Choices lock privately and reveal together when both are saved. Players then choose their next move with the previous results visible. The final round uses the remaining budget. Higher shots wins one point; tied islands award neither side points. Most rounds won takes the pot; a draw refunds both stakes.
 
 Each new round gets **24 hours** from when it opens. Disconnecting has no immediate penalty: return to the saved match and choice. A private per-minute timer saves random valid shots only for missing choices after the deadline, reveals the round and opens a fresh 24-hour window. Late submissions see the saved result and cannot reroll it or accidentally submit to the next round. An unattended match can take several days. New challenges close at 00:00 Dublin on 8 November; already-started PKs retain full round windows and can finish afterward. Unjoined invitations never cross that new-challenge cutoff.
 
 Stakes remain 5/10/20% of the smaller available balance; custom multiples of 10 are capped at 20%. Staked gold stays in wealth rankings and outside wheel attacks. Existing balances are preserved. Practice on 31 October and free bot practice never change gold. Official starts opened on 1 November.
+
+Already-started battles and completed results retain their original scoring; invitations that have not started switch to equal points. The match carries its scoring rule so replays, history and timeout settlement agree. Older clients must reload before starting or playing a new-rules battle. The pinned scoreboard shows names, avatars, point totals and round progress during choices, waiting and reveals; round history separates points from shots.
 
 ### Deployment
 

@@ -4,6 +4,8 @@ import { DUEL_ICONS, type DuelMatch } from "@/lib/duel";
 import { initialReveal, revealReducer } from "@/lib/duelReveal";
 import { people } from "@/lib/trip";
 import { Avatar, useApp } from "./common";
+import PkScoreboard from "./PkScoreboard";
+import PkRoundHistory from "./PkRoundHistory";
 const NAMES=[{zh:"贝壳海滩",en:"Shell Shore"},{zh:"棕榈岛",en:"Palm Haven"},{zh:"珊瑚湾",en:"Coral Cove"},{zh:"骷髅礁",en:"Skull Rock"},{zh:"皇冠岛",en:"Crown Island"}];
 export function Ship({id,side,firing}:{id:string;side:"left"|"right";firing:boolean}) {
  const captain=people.find(x=>x.id===id);
@@ -24,25 +26,26 @@ export default function DuelReveal({match:c,onDone,startAtFinal=false}:{match:Du
   return()=>clearTimeout(timer);
  },[frame,reduced,visible]);
  const name=(id:string)=>id==="bot"?say("练习船长","Captain Bot"):p(people.find(x=>x.id===id)??{zh:id,en:id});
+ const islandPoint=(i:number)=>c.mode==='live'&&c.scoring==='equal'?1:i+1;
  const ap=c.aPlan??[],bp=c.bPlan??[],final=frame.phase==="final",showShots=frame.phase!=="intro",scored=frame.phase==="result";
  const completed=final?5:frame.round+(scored?1:0);let sa=0,sb=0;
- for(let i=0;i<completed;i++){if(ap[i]>bp[i])sa+=i+1;else if(bp[i]>ap[i])sb+=i+1;}
+ for(let i=0;i<completed;i++){if(ap[i]>bp[i])sa+=islandPoint(i);else if(bp[i]>ap[i])sb+=islandPoint(i);}
  if(final){sa=c.aScore??sa;sb=c.bScore??sb;}
  const roundWinner=ap[frame.round]>bp[frame.round]?c.a:bp[frame.round]>ap[frame.round]?c.b:null;
  const won=c.winner===person?.id,winningPerson=people.find(x=>x.id===c.winner);
  return <section className="duel-cinema" aria-label={say("对决揭晓","Duel reveal")}>
-  <div className="duel-cinema-score"><div><span>{name(c.a)}</span><strong key={`a-${sa}`}>{sa}</strong></div><b>⚔️</b><div><span>{name(c.b)}</span><strong key={`b-${sb}`}>{sb}</strong></div></div>
+  {c.mode==='live'?<PkScoreboard a={c.a} b={c.b} scoreA={sa} scoreB={sb} round={final?5:frame.round+1}/>:<div className="duel-cinema-score"><div><span>{name(c.a)}</span><strong key={`a-${sa}`}>{sa}</strong></div><b>⚔️</b><div><span>{name(c.b)}</span><strong key={`b-${sb}`}>{sb}</strong></div></div>}
   {!final?<>
    <div className="duel-round-heading"><small>{say("第","ROUND")} {frame.round+1} / 5</small><h2>{p(NAMES[frame.round])}</h2></div>
    <div className={`duel-sea-stage phase-${frame.phase}`} key={frame.round}>
     <div className="duel-sea-ripple ripple-one"/><div className="duel-sea-ripple ripple-two"/>
     <Ship id={c.a} side="left" firing={frame.phase==="fire"}/><Ship id={c.b} side="right" firing={frame.phase==="fire"}/>
     <div className="duel-shot-count shot-a">{showShots?ap[frame.round]:"?"}<small>💣</small></div><div className="duel-shot-count shot-b">{showShots?bp[frame.round]:"?"}<small>💣</small></div>
-    <div className="duel-cinema-island"><span>{DUEL_ICONS[frame.round]}</span><small>{frame.round+1} {say("分","pts")}</small>{scored&&roundWinner&&<i className={`duel-island-flag ${roundWinner===c.a?"flag-a":"flag-b"}`}>⚑</i>}</div>
+    <div className="duel-cinema-island"><span>{DUEL_ICONS[frame.round]}</span><small>{islandPoint(frame.round)} {say("分","pts")}</small>{scored&&roundWinner&&<i className={`duel-island-flag ${roundWinner===c.a?"flag-a":"flag-b"}`}>⚑</i>}</div>
     {frame.phase==="fire"&&<svg className="duel-cannon-trails" viewBox="0 0 360 240" aria-hidden="true"><circle r="5" fill="#ffe2a0"><animateMotion dur=".85s" fill="freeze" path="M90 105 Q130 40 175 183"/></circle><circle r="5" fill="#ffe2a0"><animateMotion dur=".85s" fill="freeze" path="M270 105 Q230 40 185 183"/></circle></svg>}
     {scored&&<div className="duel-water-splash" aria-hidden="true">✧</div>}
    </div>
-   <div className="duel-round-result" role="status" aria-live="polite">{scored?<><strong>{roundWinner?name(roundWinner):say("本岛平局","Island tied")}</strong><span>{roundWinner?`+${frame.round+1} ${say("分","points")}`:say("双方 +0 分","No points awarded")}</span></>:<span>{frame.phase==="fire"?say("开炮！","Cannons away!"):say("双方准备…","Captains ready…")}</span>}</div>
+   <div className="duel-round-result" role="status" aria-live="polite">{scored?<><strong>{roundWinner?name(roundWinner):say("本岛平局","Island tied")}</strong><span>{roundWinner?`+${islandPoint(frame.round)} ${say("分",islandPoint(frame.round)===1?"point":"points")}`:say("双方 +0 分","No points awarded")}</span></>:<span>{frame.phase==="fire"?say("开炮！","Cannons away!"):say("双方准备…","Captains ready…")}</span>}</div>
    <div className="duel-round-track" aria-label={say("已揭晓岛屿","Islands revealed")}>{DUEL_ICONS.map((icon,i)=><span key={i} className={i<completed?"done":i===frame.round?"current":""}>{i<=frame.round?icon:"·"}</span>)}</div>
    <div className="duel-reveal-controls"><button className="pirate-secondary-button" onClick={()=>dispatch({type:"skip"})}>{say("直接看结果","Skip to result")}</button><button className="pirate-gold-button" onClick={()=>dispatch({type:"next"})}>{frame.round===4?say("查看结果","Final result"):say("下一回合","Next round")} →</button></div>
   </>:<div className="duel-cinema-final">
@@ -54,5 +57,7 @@ export default function DuelReveal({match:c,onDone,startAtFinal=false}:{match:Du
    {c.autoDefended&&<p className="duel-caption">🤖 {say("超时自动防守","Automatic defence after timeout")}</p>}
    <button className="pirate-gold-button" onClick={onDone}>{say("返回海湾","Back to the cove")} →</button>
   </div>}
+  {c.mode==='live'&&c.scoring==='weighted'&&<p className="duel-caption">{say('此前的对战 · 沿用原计分','Previous battle · Original scoring')}</p>}
+  {final&&c.mode==='live'&&<PkRoundHistory match={c}/>}
  </section>;
 }

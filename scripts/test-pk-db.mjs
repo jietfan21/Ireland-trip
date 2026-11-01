@@ -2,14 +2,16 @@ import {PGlite} from '@electric-sql/pglite';
 import {readFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
+const hold=setInterval(()=>{},1000);
 const db=new PGlite();
 await db.exec(`create role anon;create role authenticated;
 create table public.pirate_players(id text primary key,gold integer not null default 1000);
 create table public.pirate_events(season text,day text,actor text,kind text,target text,amount integer,turn_key text unique);
 insert into public.pirate_players(id) values('dad'),('mom'),('jiet'),('hui'),('rong'),('yao'),('ying');`);
 for(const file of ['20261031122859_treasure_duel.sql','20261031134319_forced_duels.sql','20261031184626_uncapped_duel_shots.sql','20261101064756_live_pk_rounds.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'));
+let protocol=1;
 const NOW='2026-11-01T12:00:00Z',DAY2='2026-11-02T12:00:00Z';
-async function rpc(who,action='state',payload={},at=NOW,key=randomUUID()){return (await db.query('select duel_private.pk_run($1,$2,$3::jsonb,$4::uuid,$5::timestamptz) as s',[who,action,JSON.stringify(payload),key,at])).rows[0].s;}
+async function rpc(who,action='state',payload={},at=NOW,key=randomUUID()){return (await db.query('select duel_private.pk_run($1,$2,$3::jsonb,$4::uuid,$5::timestamptz) as s',[who,action,JSON.stringify({rulesVersion:protocol,...payload}),key,at])).rows[0].s;}
 const match=(s,id)=>s.matches.find(x=>x.id===id);
 async function invite(a='jiet',b='dad',at=NOW,practice=false,stake=100){return (await rpc(a,'invite',{target:b,stake,practice},at)).selected;}
 async function start(a='jiet',b='dad',at=NOW,practice=false,stake=100){const id=await invite(a,b,at,practice,stake);if(b!=='bot')await rpc(b,'join',{id},at);await rpc(a,'ready',{id},at);if(b!=='bot')await rpc(b,'ready',{id},at);return id;}
@@ -38,4 +40,36 @@ await check('active battles retain full per-round deadlines beyond season end, w
 await check('legacy history and unfinished matches remain available without permitting old client launches',async()=>{const old=(await db.query('select duel_private.run($1,$2,$3::jsonb,$4::uuid,$5::timestamptz) as s',['jiet','launch',JSON.stringify({target:'dad',stake:100,plan:[0,0,3,4,5]}),randomUUID(),NOW])).rows[0].s;assert.ok(match(await rpc('jiet'),old.selected));await rpc('dad','legacy_lock',{id:old.selected,plan:[2,2,2,3,3]});assert.equal(match(await rpc('dad'),old.selected).status,'complete');await assert.rejects(()=>db.query("select public.pirate_duel('jiet','launch','{}',gen_random_uuid())"),/update_required/);});
 await check('anonymous clients cannot read private round tables or run internal clock/projection helpers',async()=>{for(const sig of ['duel_private.pk_tick(timestamptz)','duel_private.pk_run(text,text,jsonb,uuid,timestamptz)','duel_private.pk_project(text,timestamptz)','duel_private.pk_resolve(uuid,timestamptz)'])assert.equal((await db.query("select has_function_privilege('anon',$1,'execute') as allowed",[sig])).rows[0].allowed,false);for(const table of ['pk_matches','pk_rounds','pk_requests'])assert.equal((await db.query("select has_table_privilege('anon',$1,'select') as allowed",['duel_private.'+table])).rows[0].allowed,false);});
 await check('bot practice stays available while a human invitation waits for a join',async()=>{await invite();const id=await start('jiet','bot');assert.equal(match(await rpc('jiet'),id).status,'active');assert.equal((await rpc('jiet')).used,false);});
-console.log(`${passed} live-PK PostgreSQL checks passed. No live database used.`);await db.close();
+// Verify the upgrade against real, unfinished old-rule matches before new-rule cases.
+await db.exec('truncate duel_private.pk_rounds,duel_private.pk_matches,duel_private.pk_requests,duel_private.matches,duel_private.requests,public.pirate_events;update public.pirate_players set gold=1000,duel_reserved=0');
+const preserved=await start();await shot('jiet',preserved,1,0);await shot('dad',preserved,1,3);
+const waiting=await invite('mom','hui');
+await db.exec(await readFile(new URL('../supabase/migrations/20261101164418_equal_pk_points.sql',import.meta.url),'utf8'));
+protocol=2;
+assert.equal(match(await rpc('jiet'),preserved).scoring,'weighted');assert.equal(match(await rpc('mom'),waiting).scoring,'equal');
+for(let n=2;n<=5;n++){await shot('jiet',preserved,n,n===5?12:0);await shot('dad',preserved,n,n===5?0:3);}
+assert.equal(match(await rpc('dad'),preserved).bScore,10);assert.equal((await rpc('dad')).players.find(p=>p.id==='dad').gold,1100);
+console.log('✓ migration preserves active rules and outcomes, and switches unstarted invitations');passed++;
+await check('equal-point PKs make saving only for the last two lose 3–2, with one payout',async()=>{
+ const id=await start();await finish(id,[0,0,0,6,6],[1,1,1,4,5]);const m=match(await rpc('dad'),id);
+ assert.equal(m.scoring,'equal');assert.equal(m.aScore,2);assert.equal(m.bScore,3);assert.equal(m.winner,'dad');
+ assert.equal((await rpc('dad')).players.find(p=>p.id==='dad').gold,1100);await tick(DAY2);await shot('dad',id,5,5);
+ assert.equal((await db.query('select count(*)::int as n from public.pirate_events')).rows[0].n,1);
+});
+await check('ties award neither side points and draw stakes still return',async()=>{
+ const id=await start();await finish(id,[0,0,0,6,6],[0,0,0,6,6]);const s=await rpc('dad');const m=match(s,id);
+ assert.equal(m.aScore,0);assert.equal(m.bScore,0);assert.equal(m.winner,null);assert.ok(s.players.every(p=>p.gold===1000&&p.reserved===0));
+});
+await check('timeout choices use equal points, remain saved and still spend exactly twelve',async()=>{
+ const id=await start();for(let n=2;n<=6;n++)await tick(`2026-11-0${n}T12:00:00Z`);
+ const m=match(await rpc('dad','state',{},'2026-11-06T12:00:01Z'),id);
+ assert.equal(m.aScore,m.rounds.filter(r=>r.a>r.b).length);assert.equal(m.bScore,m.rounds.filter(r=>r.b>r.a).length);
+ assert.ok(m.aScore+m.bScore<=5);assert.equal(m.aPlan.reduce((a,b)=>a+b,0),12);assert.equal(m.bPlan.reduce((a,b)=>a+b,0),12);
+});
+await check('old clients cannot start or submit a new-rule PK with misleading old labels',async()=>{
+ const id=await invite();await rpc('dad','join',{id});await assert.rejects(()=>rpc('dad','ready',{id,rulesVersion:1}),/update_required/);
+ await assert.rejects(()=>db.query("select duel_private.pk_run('mom','invite','{\"target\":\"hui\",\"stake\":100}'::jsonb,gen_random_uuid(),$1::timestamptz)",[NOW]),/update_required/);
+ await rpc('jiet','ready',{id});await rpc('dad','ready',{id});
+ await assert.rejects(()=>db.query("select duel_private.pk_run('dad','shot',$1::jsonb,gen_random_uuid(),$2::timestamptz)",[JSON.stringify({id,round:1,shot:0}),NOW]),/update_required/);
+});
+console.log(`${passed} live-PK PostgreSQL checks passed. No live database used.`);await db.close();clearInterval(hold);
