@@ -12,6 +12,7 @@ export default function LunchChoices({ date, options }: { date: string; options:
   const roadTrip = date === "2026-11-01";
   const dingleTownDay = date === "2026-11-02";
   const dayOfWeek = new Date(`${date}T12:00:00Z`).toLocaleDateString("en-IE", { weekday: "long", timeZone: "Europe/Dublin" });
+  const dayOfWeekZh = new Date(`${date}T12:00:00Z`).toLocaleDateString("zh-CN", { weekday: "long", timeZone: "Europe/Dublin" });
 
   useEffect(() => {
     try {
@@ -31,7 +32,7 @@ export default function LunchChoices({ date, options }: { date: string; options:
     <Card>
       <h3 className="flex items-center gap-2 text-[18px] font-bold">
         <UtensilsCrossed size={21} className="text-shamrock" />
-        {dingleTownDay ? (lang === "zh" ? "午餐：在外吃或 Airbnb 自煮" : "Lunch: eat out or cook at Airbnb") : (lang === "zh" ? "午餐：七选一（7 人）" : "Lunch: pick one for seven")}
+        {dingleTownDay ? (lang === "zh" ? "午餐：在外吃或 Airbnb 自煮" : "Lunch: eat out or cook at Airbnb") : (lang === "zh" ? "午餐：七人选一家" : "Lunch: pick one for seven")}
       </h3>
       <p className="mt-1 text-[14px] leading-snug text-sub">
         {dingleTownDay
@@ -43,7 +44,7 @@ export default function LunchChoices({ date, options }: { date: string; options:
             ? "选一家，先确认周日营业与七人订位。餐厅遍布不同小镇，需开车前往；选择只存在这部手机。"
             : "Pick one and confirm Sunday opening and a table for seven. These are in different towns, so drive to your chosen restaurant. Saved on this phone only.")
           : (lang === "zh"
-            ? "选一家再确认周六营业及订位。选择只储存在这部手机；点地图可查看餐厅，再选「路线」步行前往。"
+            ? `选一家，先确认${dayOfWeekZh}营业与七人订位。选择只储存在这部手机；点地图可查看餐厅，再选「路线」步行前往。`
             : `Choose one, then check ${dayOfWeek} hours and reserve for seven. Your choice stays on this phone only; tap Map to open the listing, then Directions to walk there.`)}
       </p>
       <div className="mt-3 space-y-2">
