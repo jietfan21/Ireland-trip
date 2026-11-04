@@ -270,6 +270,7 @@ export type Day = {
   tips: L[];
   stops: string[]; // map order
   lunchOptions?: LunchOption[]; // lunch alternatives, choose one
+  dinnerOptions?: LunchOption[]; // dinner alternatives, choose one
 };
 
 export const days: Day[] = [
