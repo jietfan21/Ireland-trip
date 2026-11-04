@@ -129,6 +129,7 @@ export default function DayView({ day, weather }: { day: Day; weather: Weather }
       </Card>
 
       {day.lunchOptions && <LunchChoices key={day.date} date={day.date} options={day.lunchOptions} />}
+      {day.dinnerOptions && <LunchChoices key={`${day.date}-dinner`} date={day.date} options={day.dinnerOptions} meal="dinner" />}
 
       {day.tips.length > 0 && (
         <Card className="bg-[#fffaf0]">
