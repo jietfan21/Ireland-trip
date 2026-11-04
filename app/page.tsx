@@ -5,6 +5,7 @@ import { CalendarDays, House, Info, ListChecks, Map as MapIcon } from "lucide-re
 import { people, type Person } from "@/lib/trip";
 import "@/lib/nov3";
 import "@/lib/nov4";
+import "@/lib/nov5";
 import type { Lang } from "@/lib/i18n";
 import { readLocal, writeLocal } from "@/lib/store";
 import { AppCtx, Avatar, type Tab, useApp } from "@/components/common";
