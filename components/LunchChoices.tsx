@@ -51,8 +51,8 @@ export default function LunchChoices({ date, options, meal = "lunch" }: { date: 
             : "Choose a Dingle restaurant or cook at the Airbnb. Check Monday hours and book for seven if eating out. Town is walkable from home; your choice stays on this phone.")
           : longTransferDay
           ? (lang === "zh"
-            ? "邓多克送容之前，在 Portlaoise 选一家午餐；建议 45–60 分钟，餐厅停车后再步行入内。七人请提前确认周四营业及座位；选择存在本机。"
-            : "Choose one lunch stop around Portlaoise before driving to Dundalk. Allow 45–60 minutes and drive to your selected venue; book for seven and confirm Thursday opening. Saved on this phone.")
+            ? "Portlaoise Plaza 只停 15–20 分钟上厕所；约 15:00 到邓多克选一家吃迟午餐，再送容回家。七人请提前确认周四营业及座位；选择存在本机。"
+            : "Portlaoise Plaza is toilets only (15–20 minutes). Choose a late lunch in Dundalk around 15:00, then drop Rong at home. Confirm Thursday kitchen hours and book for seven. Saved on this phone.")
           : roadTrip
           ? (lang === "zh"
             ? "选一家，先确认周日营业与七人订位。餐厅遍布不同小镇，需开车前往；选择只存在这部手机。"
